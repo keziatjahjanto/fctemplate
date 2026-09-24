@@ -4,8 +4,8 @@ Reusable Claude skills that produce on-brand Frontier Commons material, based on
 
 | Skill | What it makes | Try asking Claude |
 |---|---|---|
-| [`frontier-commons-slides`](.claude/skills/frontier-commons-slides/SKILL.md) | PowerPoint decks (.pptx) with 12 branded layouts | "Make a 10-slide Frontier Commons partner briefing from these notes" |
-| [`frontier-commons-graphics`](.claude/skills/frontier-commons-graphics/SKILL.md) | PNG graphics: social posts, stories, carousels, quote and stat cards, event promos, banners | "Make an Instagram post announcing our October webinar" |
+| [`frontier-commons-slides`](.claude/skills/frontier-commons-slides/SKILL.md) | PowerPoint decks (.pptx). Picks each slide's layout from how many points it has and what kind (numbers, steps, principles, features), splits crowded slides, adds brand icons, editable charts and timelines, and checks copy length | "Make a 10-slide Frontier Commons partner briefing from these notes" |
+| [`frontier-commons-graphics`](.claude/skills/frontier-commons-graphics/SKILL.md) | PNG graphics: social posts, stories, carousels, quote and stat cards, event promos, banners. They use the same icons as the slides and can be placed inside a slide | "Make an Instagram post announcing our October webinar" |
 
 ## Setup (once per Mac)
 ```bash
@@ -24,8 +24,9 @@ Graphics need Google Chrome installed; their fonts are bundled.
 python3 .claude/skills/frontier-commons-slides/scripts/build_deck.py my-deck.json -o my-deck.pptx
 python3 .claude/skills/frontier-commons-graphics/scripts/render.py my-post.json -o out/
 ```
-See each skill's `examples/` folder for ready-made JSON.
+Add `--plan` to the deck command to see the layout picked for each slide. See each skill's `examples/` folder for ready-made JSON; `auto-deck.json` shows the automatic layouts.
 
 ## Notes
 - The logo files are **reconstructed** from the guide. Drop the official files into each skill's `assets/` folder, keeping the same names, to replace them.
-- Brand rules (colours, type, logo, voice) live in `references/brand.md` inside each skill.
+- Brand rules (colours, type, logo, voice) live in `references/brand.md` inside each skill. Icon names and keywords are in `references/icons.md`.
+- Icons are from [Lucide](https://lucide.dev) (ISC licence), recoloured to the brand.

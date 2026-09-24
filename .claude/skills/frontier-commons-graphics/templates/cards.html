@@ -1,5 +1,5 @@
 <!-- default-theme: mist -->
-<!-- fields: title*, items* (2-4 of {title, subtitle, emoji, text}). Styled like the "Core Principles" page. -->
+<!-- fields: title*, items* (2-4 of {title, subtitle, icon, text}). auto-icons. Styled like the "Core Principles" page. -->
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
 <style>
   .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 5); }
@@ -13,6 +13,7 @@
   .theme-papaya .card { background: #FFFFFF; }
   .card .icon { font-size: calc(var(--u) * 7); line-height: 1; margin: calc(var(--u) * 1.5) 0; }
   .card .icon img { height: calc(var(--u) * 12); width: auto; }
+  .card .glyph { width: calc(var(--u) * 7); height: calc(var(--u) * 7); color: var(--deep-blue); margin: calc(var(--u) * 1.2) 0; }
   .card .t { font-family: var(--display); font-weight: 700; font-size: calc(var(--u) * 3.6); color: var(--onyx); padding: 0 calc(var(--u) * 1.5) calc(var(--u) * 1); border-bottom: calc(var(--u) * 0.35) solid var(--amber); }
   .card .s { font-family: var(--display); font-size: calc(var(--u) * 3); }
   .card .x { font-size: calc(var(--u) * 2.5); margin-top: calc(var(--u) * 2); line-height: 1.4; }
@@ -21,7 +22,7 @@
   <div class="wrap">
     <div class="subtitle">{{title}}</div>
     <div class="grid">
-      {{#items}}<div class="card"><div class="t">{{title}}</div>{{#subtitle}}<div class="s">{{subtitle}}</div>{{/subtitle}}{{#emoji}}<div class="icon">{{emoji}}</div>{{/emoji}}{{#text}}<div class="x">{{text}}</div>{{/text}}</div>{{/items}}
+      {{#items}}<div class="card"><div class="t">{{title}}</div>{{#subtitle}}<div class="s">{{subtitle}}</div>{{/subtitle}}{{#icon_svg}}<div class="glyph">{{{icon_svg}}}</div>{{/icon_svg}}{{#text}}<div class="x">{{text}}</div>{{/text}}</div>{{/items}}
     </div>
   </div>
   <div class="logo-slot">{{{logo}}}</div>

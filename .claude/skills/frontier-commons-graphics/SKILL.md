@@ -45,13 +45,17 @@ Requires Google Chrome (or Chromium, Edge, or Brave; set `CHROME_PATH` for a cus
 |---|---|---|---|
 | `announcement` | deep-blue | News, launches, "who we are", covers | `headline`*, `tag`, `subtext`, `cta`, `image`, `footnote` |
 | `quote` | papaya | Testimonies, principles, scripture | `quote`*, `author`, `role`, `image` (round headshot) |
-| `stat` | mist | "Did you know?", impact numbers | `stat`*, `label`*, `tag`, `detail`, `source` |
+| `stat` | mist | "Did you know?", impact numbers | `stat`*, `label`*, `icon`, `tag`, `detail`, `source` |
 | `event` | deep-blue | Webinars, gatherings, deadlines | `title`*, `tag`, `subtitle`, `date`, `time`, `location`, `cta`, `image` |
 | `photo` | mist | Stories, recaps, community moments | `image`*, `headline`*, `tag`, `caption` |
-| `list` | mist | Tips, steps, "4 ways…" | `title`*, `items`* `[{title, text}]` (up to 5 square, 6 wide), `tag`, `footnote` |
-| `cards` | mist | 2–4 principles or pillars (Papaya cards) | `title`*, `items`* `[{title, subtitle, emoji, text}]` |
+| `list` | mist | Tips, steps, "4 ways…" | `title`*, `items`* `[{title, text, icon}]` (up to 5 square, 6 wide), `tag`, `footnote` |
+| `cards` | mist | 2–4 principles or pillars (Papaya cards) | `title`*, `items`* `[{title, subtitle, icon, text}]` |
 | `divider` | periwinkle | Carousel covers, section cards, the brand's big-word-on-a-line style | `word`*, `kicker` |
 | `logo` | — | Export the wordmark as a transparent PNG | `layout`: `horizontal`/`stacked`; set `"transparent": true`. See `examples/export-logos.json` |
+
+**Icons:** `list` and `cards` items get brand line icons picked from their titles automatically, the same library and rules as the slides skill (`references/icons.md`). Set `"icon": "<name>"` per item, `"icon": "none"` to drop one, or `"icons": "none"` on the spec to turn them off. A list uses icons for every item or none, and falls back to numbers when any item has no match. `stat` takes one explicit `icon`.
+
+**Supporting a deck:** the slides skill can embed any of these templates in a slide (`"graphic": {spec}` on an `image` slide). To make a social or email set that matches a deck, reuse the deck's titles, points and icon names so both use the same words and pictures: a `divider` for each section, `stat` for its numbers, `list` or `cards` for its points, `quote` for its testimonies.
 
 **Carousels:** use a list spec with the same `size` (`portrait` or `square`), open with a `divider` or `announcement`, fill the middle with `list`, `stat` or `quote`, and close with an `announcement` CTA. Name the files `-1`, `-2`, and so on.
 
@@ -68,6 +72,6 @@ Copy an existing `templates/*.html` file. Keep the `<!-- default-theme: X -->` c
 ## Files
 - `scripts/render.py`: renderer (spec → PNG via headless Chrome)
 - `templates/`: `base.css` (tokens, themes, type scale) plus one HTML file per template
-- `assets/`: logo SVG and PNG (reconstructed; replace with official files if available) and bundled fonts (OFL)
+- `assets/`: logo SVG and PNG (reconstructed; replace with official files if available), bundled fonts (OFL), and `icons/` (line icons plus `catalog.json`, shared with the slides skill)
 - `examples/demo/`: example specs and rendered output
 - `references/brand.md`: colours, type, logo rules, voice and tone

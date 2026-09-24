@@ -104,6 +104,68 @@ def fill(template, fields):
     return re.sub(r"\{\{(\w+)\}\}", lambda m: markup(fields.get(m.group(1), "")), template)
 
 
+ICON_DIR = ASSETS / "icons"
+ICON_CATALOG = json.loads((ICON_DIR / "catalog.json").read_text()) if (ICON_DIR / "catalog.json").exists() else {}
+SUFFIXES = ("ations", "ation", "ities", "ively", "ivity", "ive", "ings", "ing", "ions", "ion", "ed", "es", "s", "e")
+
+
+def _stem(w):
+    for suf in SUFFIXES:
+        if w.endswith(suf) and len(w) - len(suf) >= 4:
+            return w[: -len(suf)]
+    return w
+
+
+def pick_icon(title, text=""):
+    """Best catalog match; the title counts three times as much as the text (same rules as the slides skill)."""
+    best, best_score = None, 0
+    for name, kws in ICON_CATALOG.items():
+        score, seen = 0, set()
+        for field, weight in ((title, 3), (text, 1)):
+            words = re.sub(r"[^a-z0-9 -]", " ", (field or "").lower()).split()
+            flat, stems = " " + " ".join(words) + " ", [_stem(w) for w in words]
+            for kw in kws:
+                key = kw if (" " in kw or "-" in kw) else _stem(kw)
+                if (key, weight) in seen:
+                    continue
+                seen.add((key, weight))
+                if (" " in kw or "-" in kw) and f" {kw}" in flat:
+                    score += weight * (1 + kw.count(" "))
+                elif key in stems:
+                    score += weight + (0.5 / (stems.index(key) + 1) if weight > 1 else 0)
+        if score > best_score:
+            best, best_score = name, score
+    return best
+
+
+def icon_svg(name):
+    """Inline line icon that inherits the text colour (CSS `color`)."""
+    f = ICON_DIR / "svg" / f"{name}.svg"
+    if not f.exists():
+        sys.exit(f"Unknown icon '{name}'. See assets/icons/catalog.json for names.")
+    svg = f.read_text().replace('stroke-width="2"', 'stroke-width="1.75"')
+    return re.sub(r'class="[^"]*"', 'class="ico" aria-hidden="true"', svg, count=1)
+
+
+def add_icons(fields, auto):
+    """Give list items an `icon_svg` (explicit name, or keyword-picked when auto); all or none per list."""
+    for k, v in fields.items():
+        if isinstance(v, list) and v and all(isinstance(i, dict) for i in v):
+            names = []
+            for it in v:
+                name = it.get("icon")
+                if name in (None, "auto") and (auto or name == "auto"):
+                    name = pick_icon(it.get("title", ""), " ".join(str(it.get(x, "")) for x in ("subtitle", "text")))
+                names.append(name if name not in ("none", False) else None)
+            if any(names) and not all(names):
+                names = [None] * len(names)
+            for it, name in zip(v, names):
+                if name:
+                    it["icon_svg"] = icon_svg(name)
+    if fields.get("icon") and isinstance(fields["icon"], str):
+        fields["icon_svg"] = icon_svg(fields["icon"])
+
+
 def logo_html(kind, on_dark):
     colour = "mist" if on_dark else "deep-blue"
     icon = (ASSETS / f"logo-icon-{colour}.svg").as_uri()
@@ -132,6 +194,7 @@ def build_html(spec, spec_dir, w, h):
         if k.endswith("image") and v:
             fields[k] = html.escape(fields[k], quote=True)  # raw-inserted via {{{key}}}
 
+    add_icons(fields, spec.get("icons", "auto") == "auto" and "auto-icons" in tpl)
     m = re.search(r"default-theme:\s*([\w-]+)", tpl)
     theme = spec.get("theme") or (m.group(1) if m else "mist")
     if theme not in THEMES:

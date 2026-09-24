@@ -1,5 +1,5 @@
 <!-- default-theme: mist -->
-<!-- fields: tag, title*, items* (list of {title, text}), footnote -->
+<!-- fields: tag, title*, items* (list of {title, text, icon}), footnote. auto-icons: items get keyword-matched icons unless "icons": "none" -->
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
 <style>
   .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; gap: calc(var(--u) * 4); }
@@ -19,7 +19,7 @@
       <div class="subtitle">{{title}}</div>
     </div>
     <div class="items">
-      {{#items}}<div class="item"><div class="n">{{index}}</div><div><div class="section">{{title}}</div>{{#text}}<div class="body-text">{{text}}</div>{{/text}}</div></div>{{/items}}
+      {{#items}}<div class="item">{{#icon_svg}}<div class="icon-badge">{{{icon_svg}}}</div>{{/icon_svg}}{{^icon_svg}}<div class="n">{{index}}</div>{{/icon_svg}}<div><div class="section">{{title}}</div>{{#text}}<div class="body-text">{{text}}</div>{{/text}}</div></div>{{/items}}
     </div>
     {{#footnote}}<div class="caption">{{footnote}}</div>{{/footnote}}
   </div>

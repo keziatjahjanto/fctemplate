@@ -1,0 +1,51 @@
+{
+  "title": "Frontier Commons — Auto Layout Demo",
+  "footer": "Frontier Commons",
+  "slides": [
+    {"layout": "title", "title": "Frontier\nCommons", "subtitle": "Ministry Partners Gathering", "date": "October 2026"},
+    {"layout": "auto", "kind": "agenda", "title": "Today", "points": ["Why international students", "What we've learned", "How we can work together", "Next steps"]},
+    {"layout": "section", "title": "Why Now", "kicker": "01"},
+    {"layout": "auto", "title": "The opportunity", "points": ["7M international students worldwide", "5 stages in every student's journey", "4 core principles guide our work"]},
+    {"layout": "auto", "title": "Students by region", "kind": "chart", "source": "Illustrative numbers — replace with real data",
+     "points": [{"value": "34%", "label": "Asia"}, {"value": "22%", "label": "Europe"}, {"value": "18%", "label": "Africa"}, {"value": "15%", "label": "Latin America"}, {"value": "11%", "label": "Middle East"}]},
+    {"layout": "auto", "title": "What students tell us they need", "points": [
+      {"title": "Friendship", "text": "Someone to share a meal with in the first month."},
+      {"title": "Belonging", "text": "A community that welcomes them as they are."},
+      {"title": "Guidance", "text": "Help with language, culture and daily life."},
+      {"title": "Faith conversations", "text": "Honest space to ask questions about the gospel."},
+      {"title": "Career support", "text": "Mentors for internships and work after graduation."}]},
+    {"layout": "auto", "kind": "journey", "title": "The student journey", "points": [
+      {"title": "Pre-Arrival", "text": "Anticipation, fear, hope"},
+      {"title": "Arrival", "text": "Overwhelmed, lonely, culture shock"},
+      {"title": "Integration", "text": "Curious, conflicted, settled"},
+      {"title": "Leadership", "text": "Empowered, confident, purposeful"},
+      {"title": "Re-Entry Home", "text": "Reverse culture shock, determination"}]},
+    {"layout": "auto", "kind": "principles", "title": "Core Principles", "points": [
+      {"title": "Accessible", "subtitle": "over academic", "text": "No previous experience, training, or interest required."},
+      {"title": "Collaborative", "subtitle": "over competitive", "text": "Building bridges and shared spaces between ministries."},
+      {"title": "Innovative", "subtitle": "over traditional", "text": "Fresh approaches through the innovation pipeline."},
+      {"title": "Global", "subtitle": "over Western-centric", "text": "Grounded in the realities of 7M students worldwide."}]},
+    {"layout": "auto", "title": "What partners can expect", "points": [
+      "Shared research on the needs of international students",
+      "Introductions to ministries already serving your campus",
+      "Coordinated calendars so events don't compete",
+      "Training that doesn't assume previous experience",
+      "A place to test new ideas with other ministries",
+      "Regular gatherings to learn from each other",
+      "Simple tools to follow up with students",
+      "Support for students returning home"]},
+    {"layout": "auto", "kind": "compare", "title": "How we work", "points": [
+      {"title": "What we add", "bullets": ["Shared data", "Coordination", "Innovation support"]},
+      {"title": "What stays yours", "bullets": ["Your ministry's identity", "Your relationships", "Your programs"]}]},
+    {"layout": "auto", "kind": "timeline", "title": "Next twelve months", "points": [
+      {"date": "Nov 2026", "title": "Partner survey", "text": "Listen before we build."},
+      {"date": "Jan 2027", "title": "Shared calendar", "text": "One view of campus events."},
+      {"date": "Mar 2027", "title": "Summit", "text": "Gather in person."},
+      {"date": "Jun 2027", "title": "Re-entry toolkit", "text": "Support students going home."}]},
+    {"layout": "image", "title": "Every friendship starts with a welcome", "tag": "Story",
+     "graphic": {"template": "quote", "theme": "papaya", "fields": {"quote": "I didn't know anyone. Then a family invited me for dinner.", "author": "[Student name]", "role": "[Program, year]"}},
+     "body": "Use this space for a short story. Replace the placeholder name with a real, consented testimony."},
+    {"layout": "auto", "points": ["Empowering the next generation to share the gospel **confidently**."]},
+    {"layout": "closing", "title": "Thank you", "subtitle": "Let's build this together.", "contact": "[your.email@example.org]"}
+  ]
+}

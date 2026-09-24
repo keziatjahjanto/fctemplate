@@ -2,14 +2,18 @@
 """Build a Frontier Commons branded PowerPoint deck from a JSON outline.
 
 Usage:
-    python3 build_deck.py deck.json [-o out.pptx]
+    python3 build_deck.py deck.json [-o out.pptx] [--plan]
 
 deck.json:
     {
       "title": "Deck title (file metadata)",
       "footer": "Frontier Commons",          # optional footer text on content slides
-      "slides": [ { "layout": "title", ... }, ... ]
+      "slides": [ { "layout": "title", ... }, { "layout": "auto", "title": "...", "points": [...] }, ... ]
     }
+
+"auto" slides pick their layout from the number and kind of points (see SKILL.md); every list
+layout is split into balanced continuation slides when it holds too much. --plan prints the
+choice made for each slide; a copy check lists text that is too long.
 
 Layouts and their fields (* = required):
     title       title*, subtitle, date
@@ -17,15 +21,17 @@ Layouts and their fields (* = required):
     section     title*, kicker
     content     title*, tag, body, bullets [str]
     two_column  title*, tag, left* {heading, body, bullets}, right* {heading, body, bullets}
-    cards       title*, tag, cards* [{title*, subtitle, text}]  (2-4)
-    stats       title*, tag, stats* [{value*, label*, detail}]   (2-4)
-    process     title*, tag, steps* [{title*, text}]             (3-6)
+    cards       title*, tag, cards* [{title*, subtitle, text, icon}]      (2-4)
+    icon_grid   title*, tag, items* [{title*, text, icon}], theme          (3-6)
+    stats       title*, tag, stats* [{value*, label*, detail, icon}]      (2-4)
+    process     title*, tag, steps* [{title*, text, date, icon}]          (3-6)
+    chart       title*, chart* {type, categories, series|values, format}, takeaway, source
     quote       quote*, author, role
-    image       title*, image*, tag, body, bullets, caption, side ("left"|"right")
-    statement   text*, tag                                       (one big sentence)
+    image       title*, image* | graphic* (frontier-commons-graphics spec), tag, body, bullets, caption, side
+    statement   text*, tag                                                (one big sentence)
     closing     title, subtitle, contact
 
-Every slide accepts "notes" (speaker notes).
+Every slide accepts "notes" (speaker notes) and "icons": false.
 Text supports **highlight** (bold + brand accent colour) and *italic*.
 Image paths are relative to the JSON file.
 """
@@ -184,10 +190,115 @@ def picture(slide, path, x, y, w, h, radius_in=0.25):
     return slide.shapes.add_picture(str(out), x, y, w, h)
 
 
+def render_graphic(spec, w, h):
+    """Render a frontier-commons-graphics template to PNG sized for a slide frame."""
+    import subprocess
+    renderer = ROOT.parent / "frontier-commons-graphics" / "scripts" / "render.py"
+    if not renderer.exists():
+        sys.exit("A slide uses \"graphic\" but the frontier-commons-graphics skill was not found next to this one.")
+    spec = dict(spec)
+    spec.setdefault("size", f"{int(w / 914400 * 150)}x{int(h / 914400 * 150)}")
+    spec.setdefault("logo", "none")
+    spec["name"] = f"graphic_{abs(hash(json.dumps(spec, sort_keys=True)))}"
+    spec_file = Path(TMP_DIR) / f"{spec['name']}.json"
+    spec_file.write_text(json.dumps(spec))
+    r = subprocess.run([sys.executable, str(renderer), str(spec_file), "-o", TMP_DIR, "--scale", "2"],
+                       capture_output=True, text=True)
+    out = Path(TMP_DIR) / f"{spec['name']}.png"
+    if not out.exists():
+        sys.exit(f"Graphic render failed:\n{r.stdout}{r.stderr}")
+    return out
+
+
 def logo(slide, kind, x, y, height):
     """kind: icon-deep-blue | icon-mist | wordmark-horizontal-mist | wordmark-stacked-deep-blue ..."""
     name = f"logo-{kind}.png" if kind.startswith("icon") else f"{kind}.png"
     return slide.shapes.add_picture(str(ASSETS / name), x, y, height=height)
+
+
+ICON_DIR = ASSETS / "icons"
+PERI_91 = RGBColor(0xDC, 0xD8, 0xF6)     # tonal step — icon badge fill on light backgrounds
+ICON_CATALOG = json.loads((ICON_DIR / "catalog.json").read_text())
+WARNINGS = []
+
+
+SUFFIXES = ("ations", "ation", "ities", "ively", "ivity", "ive", "ings", "ing", "ions", "ion", "ed", "es", "s", "e")
+
+
+def stem(word):
+    for suf in SUFFIXES:
+        if word.endswith(suf) and len(word) - len(suf) >= 4:
+            return word[: -len(suf)]
+    return word
+
+
+def _words(text):
+    return re.sub(r"[^a-z0-9 -]", " ", (text or "").lower()).split()
+
+
+def pick_icon(title, *texts):
+    """Choose the catalog icon whose keywords best match; the title counts three times as much as the text."""
+    fields = [(title, 3)] + [(t, 1) for t in texts]
+    best, best_score = None, 0
+    for name, words in ICON_CATALOG.items():
+        score = 0
+        for text, weight in fields:
+            if not text:
+                continue
+            flat = " " + " ".join(_words(text)) + " "
+            stem_list = [stem(w) for w in _words(text)]
+            seen = set()
+            for kw in words:
+                key = kw if (" " in kw or "-" in kw) else stem(kw)
+                if key in seen:
+                    continue  # "partner" and "partners" count once
+                seen.add(key)
+                if " " in kw or "-" in kw:
+                    pos = flat.find(f" {kw}")
+                    hit = pos >= 0
+                    pos = flat[:max(pos, 0)].count(" ")
+                else:
+                    hit = stem(kw) in stem_list
+                    pos = stem_list.index(stem(kw)) if hit else 0
+                if hit:
+                    # earlier words in the title win ties ("Career support" -> career)
+                    score += weight * (1 + kw.count(" ")) + (0.5 / (pos + 1) if weight > 1 else 0)
+        if score > best_score:
+            best, best_score = name, score
+    return best
+
+
+def consistent_icons(names):
+    """Icons for every item or none: a row that mixes icons and numbers looks broken."""
+    return names if all(names) else [None] * len(names)
+
+
+def resolve_icon(item, s, *texts):
+    """An item's icon: explicit name, false/none to disable, else auto-picked when the slide allows icons."""
+    if isinstance(item, dict) and "icon" in item:
+        v = item["icon"]
+        if not v or v == "none":
+            return None
+        if v != "auto":
+            if v in ICON_CATALOG:
+                return v
+            WARNINGS.append(f"unknown icon '{v}' (see references/icons.md); picked one automatically")
+    if s.get("icons", True) is False:
+        return None
+    return pick_icon(*texts)
+
+
+def icon(slide, name, x, y, size, colour="deep-blue"):
+    return slide.shapes.add_picture(str(ICON_DIR / colour / f"{name}.png"), x, y, size, size)
+
+
+def icon_badge(slide, name, x, y, d, dark=False):
+    """Icon in a soft Periwinkle disc (light slides) or a plain Periwinkle icon (dark slides)."""
+    if dark:
+        return icon(slide, name, x, y, d, "periwinkle")
+    oval(slide, x, y, d, PERI_91)
+    pad = int(d * 0.24)
+    return icon(slide, name, x + pad, y + pad, d - 2 * pad, "deep-blue")
 
 
 def tag(slide, x, y, text):
@@ -213,6 +324,18 @@ def footer(slide, n, text, dark=False):
             font=BODY, size=10, color=color)
 
 
+def est_lines(text, width, size, bold=False):
+    """Rough line count for wrapped text: DM Sans/Inter average ~0.52em per character (0.56 bold)."""
+    per_line = max(1, int(width / Pt(size) / (0.56 if bold else 0.52)))
+    lines, cur = 1, 0
+    for word in str(text).split():
+        if cur and cur + 1 + len(word) > per_line:
+            lines, cur = lines + 1, len(word)
+        else:
+            cur += (1 if cur else 0) + len(word)
+    return lines
+
+
 def header(slide, s, top=Inches(0.7), color=DEEP_BLUE, size=36):
     """Optional amber tag + slide title. Returns y where content can start."""
     y = top
@@ -220,8 +343,9 @@ def header(slide, s, top=Inches(0.7), color=DEEP_BLUE, size=36):
         tag(slide, M, y, s["tag"])
         y += Inches(0.55)
     textbox(slide, M, y, CONTENT_W, Inches(1.2), s.get("title", ""), font=DISPLAY, size=size,
-            color=color, bold=True, track=-10, line=1.05, hl=BLUE_50, anchor=MSO_ANCHOR.TOP)
-    lines = max(1, len(s.get("title", "")) // 48 + 1)
+            color=color, bold=True, track=-10, line=1.05, hl=PERI_82 if color == MIST else BLUE_50,
+            anchor=MSO_ANCHOR.TOP)
+    lines = est_lines(s.get("title", ""), CONTENT_W, size, bold=True)
     return y + Pt(size) * 1.15 * lines + Inches(0.45)
 
 
@@ -268,8 +392,14 @@ def l_content(prs, s, n, deck):
                      line=1.4, track=-10, hl=BLUE_50)
         y += Inches(0.5) + Pt(20) * 1.4 * (len(s["body"]) // 85 + 1)
         avail = H - y - Inches(1.0)
-    if s.get("bullets"):
-        bullets(sl, M, y, Inches(10.5), avail, s["bullets"], size=20)
+    items = s.get("bullets") or []
+    if len(items) > 5:  # 6-8 short points: two balanced columns
+        half = (len(items) + 1) // 2
+        colw = (CONTENT_W - Inches(0.6)) / 2
+        bullets(sl, M, y, Emu(int(colw)), avail, items[:half], size=18)
+        bullets(sl, M + Emu(int(colw + Inches(0.6))), y, Emu(int(colw)), avail, items[half:], size=18)
+    elif items:
+        bullets(sl, M, y, Inches(10.5), avail, items, size=20)
     footer(sl, n, deck.get("footer"))
     return sl
 
@@ -310,7 +440,9 @@ def l_cards(prs, s, n, deck):
     cw = (CONTENT_W - gap * (len(cards) - 1)) / len(cards)
     longest = max(len(c.get("text", "")) for c in cards)
     chars_per_line = max(12, int(cw / Inches(1)) * 9)
-    ch = min(H - y - Inches(1.0), Inches(2.6) + Pt(15) * 1.4 * (longest // chars_per_line + 2))
+    icons = consistent_icons([resolve_icon(c, s, c.get("title"), c.get("subtitle"), c.get("text")) for c in cards])
+    icon_h = Inches(0.95) if any(icons) else 0
+    ch = min(H - y - Inches(1.0), Inches(2.6) + icon_h + Pt(15) * 1.4 * (longest // chars_per_line + 2))
     y = y + (H - y - Inches(1.0) - ch) / 2  # centre the row vertically
     y = Emu(int(y))
     for i, c in enumerate(cards):
@@ -327,6 +459,10 @@ def l_cards(prs, s, n, deck):
             textbox(sl, x + pad, ty, iw, Inches(0.8), c["subtitle"], font=DISPLAY, size=18, color=ONYX,
                     align=PP_ALIGN.CENTER)
             ty += Inches(0.85)
+        if icons[i]:
+            isz = Inches(0.75)
+            icon(sl, icons[i], x + Emu(int((cw - isz) / 2)), ty + Inches(0.05), isz)
+        ty += icon_h
         if c.get("text"):
             textbox(sl, x + pad, ty + Inches(0.15), iw, ch - (ty - y) - Inches(0.4), c["text"], font=BODY, size=15,
                     color=ONYX, align=PP_ALIGN.CENTER, line=1.4, hl=DEEP_BLUE)
@@ -341,10 +477,13 @@ def l_stats(prs, s, n, deck):
     stats = s["stats"][:4]
     gap = Inches(0.5)
     cw = (CONTENT_W - gap * (len(stats) - 1)) / len(stats)
-    top = y + Inches(0.4)
+    has_icons = any(st.get("icon") in ICON_CATALOG for st in stats)
+    top = y + (Inches(0.9) if has_icons else Inches(0.4))
     for i, st in enumerate(stats):
         x = M + Emu(int((cw + gap) * i))
         iw = Emu(int(cw))
+        if st.get("icon") in ICON_CATALOG:
+            icon_badge(sl, st["icon"], x, top - Inches(0.75), Inches(0.7))
         textbox(sl, x, top, iw, Inches(1.4), st["value"], font=DISPLAY, size=72 if len(stats) < 4 else 60,
                 color=DEEP_BLUE, bold=True, anchor=MSO_ANCHOR.BOTTOM, line=0.9, track=-30)
         rect(sl, x, top + Inches(1.6), Inches(0.9), Pt(4), AMBER)
@@ -358,30 +497,188 @@ def l_stats(prs, s, n, deck):
 
 
 def l_process(prs, s, n, deck):
+    """Sequential steps / journey / timeline. Steps may carry a `date` (shown above the dot) and an icon."""
     sl = prs.slides.add_slide(prs.slide_layouts[6])
     bg(sl, PAPAYA)
     y = header(sl, s)
     steps = s["steps"][:6]
     k = len(steps)
+    start = s.get("start", 1)  # step numbering continues across split slides
     colw = CONTENT_W / k
-    d = Inches(0.8)
-    cy = y + Inches(0.8)
+    d = Inches(0.9)
+    has_dates = any(st.get("date") for st in steps)
+    cy = y + (Inches(1.05) if has_dates else Inches(0.7))
     rect(sl, M + Emu(int(colw / 2)), cy + d / 2 - Pt(1.5), Emu(int(colw * (k - 1))), Pt(3), DEEP_BLUE)
+    tw = Emu(int(colw - Inches(0.25)))
+    step_icons = consistent_icons([resolve_icon(st, s, st.get("title"), st.get("text")) for st in steps])
     for i, st in enumerate(steps):
         cx = M + Emu(int(colw * i + colw / 2))
+        ic = step_icons[i]
         c = oval(sl, cx - d / 2, cy, d, PERIWINKLE)
-        tf = c.text_frame
-        tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
-        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-        p = tf.paragraphs[0]
-        p.alignment = PP_ALIGN.CENTER
-        add_runs(p, str(i + 1), DISPLAY, 22, ONYX, bold=True)
-        tw = Emu(int(colw - Inches(0.25)))
-        textbox(sl, cx - tw / 2, cy + d + Inches(0.3), tw, Inches(0.7), st["title"], font=BODY, size=17,
+        num = str(start + i)
+        if ic:
+            pad = int(d * 0.24)
+            icon(sl, ic, cx - d / 2 + pad, cy + pad, d - 2 * pad, "onyx")
+        else:
+            tf = c.text_frame
+            tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            p = tf.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            add_runs(p, num, DISPLAY, 22, ONYX, bold=True)
+        if st.get("date"):
+            textbox(sl, cx - tw / 2, cy - Inches(0.5), tw, Inches(0.35), st["date"].upper(), font=BODY, size=12,
+                    color=BLUE_50, bold=True, align=PP_ALIGN.CENTER, track=60)
+        label = f"{num}. {st['title']}" if ic and s.get("numbered", True) else st["title"]
+        textbox(sl, cx - tw / 2, cy + d + Inches(0.3), tw, Inches(0.7), label, font=BODY, size=17,
                 color=DEEP_BLUE, bold=True, align=PP_ALIGN.CENTER, line=1.15)
         if st.get("text"):
             textbox(sl, cx - tw / 2, cy + d + Inches(1.0), tw, Inches(2), st["text"], font=BODY, size=14,
                     color=ONYX, align=PP_ALIGN.CENTER, line=1.4)
+    footer(sl, n, deck.get("footer"))
+    return sl
+
+
+def l_icon_grid(prs, s, n, deck):
+    """3–6 features / benefits / programs, each with an icon, a short title and one line of text."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    dark = s.get("theme") == "dark"
+    bg(sl, DEEP_BLUE if dark else MIST)
+    y = header(sl, s, color=MIST if dark else DEEP_BLUE)
+    items = s["items"][:6]
+    k = len(items)
+    cols = {1: 1, 2: 2, 3: 3, 4: 4 if max(len(it.get("text", "")) for it in items) < 90 else 2, 5: 3, 6: 3}[k]
+    rows = (k + cols - 1) // cols
+    gap_x, gap_y = Inches(0.5), Inches(0.35)
+    cw = (CONTENT_W - gap_x * (cols - 1)) / cols
+    avail = H - y - Inches(0.95)
+    rh = min(Inches(2.6) if rows == 1 else Inches(1.7), (avail - gap_y * (rows - 1)) / rows)
+    d = Inches(0.85) if rows == 1 else Inches(0.7)
+    centred = rows == 1
+    top = y + (avail - (rh * rows + gap_y * (rows - 1))) / 2
+    for i, it in enumerate(items):
+        r, c = divmod(i, cols)
+        in_row = min(cols, k - r * cols)
+        offset = (cols - in_row) * (cw + gap_x) / 2  # centre a short last row
+        x = M + Emu(int(offset + (cw + gap_x) * c))
+        yy = Emu(int(top + (rh + gap_y) * r))
+        ic = resolve_icon(it, s, it.get("title"), it.get("text")) or "sparkles"
+        iw = Emu(int(cw))
+        if centred:
+            icon_badge(sl, ic, x + Emu(int((cw - d) / 2)), yy, d, dark)
+            ty = yy + d + Inches(0.25)
+            align = PP_ALIGN.CENTER
+            tx, tw = x, iw
+        else:
+            icon_badge(sl, ic, x, yy, d, dark)
+            ty = yy + Inches(0.02)
+            align = PP_ALIGN.LEFT
+            tx, tw = x + d + Inches(0.25), Emu(int(cw - d - Inches(0.25)))
+        textbox(sl, tx, ty, tw, Inches(0.5), it["title"], font=BODY, size=18, color=MIST if dark else DEEP_BLUE,
+                bold=True, align=align, line=1.15, track=-10)
+        title_lines = est_lines(it["title"], tw, 18, bold=True)
+        text_y = ty + Pt(18) * 1.15 * title_lines + Inches(0.12)
+        if it.get("text"):
+            textbox(sl, tx, text_y, tw, rh - (text_y - yy), it["text"], font=BODY, size=14,
+                    color=MIST if dark else ONYX, align=align, line=1.4)
+    footer(sl, n, deck.get("footer"), dark=dark)
+    return sl
+
+
+CHART_COLOURS = [DEEP_BLUE, PERIWINKLE, AMBER, RGBColor(0x62, 0x6D, 0xEA), RGBColor(0xCC, 0xC6, 0xF2),
+                 RGBColor(0x5F, 0x64, 0x6D)]
+
+
+def l_chart(prs, s, n, deck):
+    """A native, editable PowerPoint chart in brand colours, with an optional takeaway panel."""
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
+
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = header(sl, s)
+    ch = s["chart"]
+    kind = ch.get("type", "column")
+    types = {"column": XL_CHART_TYPE.COLUMN_CLUSTERED, "bar": XL_CHART_TYPE.BAR_CLUSTERED,
+             "stacked": XL_CHART_TYPE.COLUMN_STACKED, "line": XL_CHART_TYPE.LINE_MARKERS,
+             "pie": XL_CHART_TYPE.PIE, "doughnut": XL_CHART_TYPE.DOUGHNUT}
+    if kind not in types:
+        sys.exit(f"Slide {n}: chart type must be one of {', '.join(types)}")
+    data = CategoryChartData()
+    data.categories = ch["categories"]
+    series = ch.get("series") or [{"name": ch.get("name", ""), "values": ch["values"]}]
+    for se in series:
+        data.add_series(se.get("name", ""), se["values"])
+    has_side = bool(s.get("takeaway"))
+    cw = Inches(7.6) if has_side else CONTENT_W
+    chh = H - y - Inches(1.2)
+    gf = sl.shapes.add_chart(types[kind], M, y, cw, chh, data)
+    chart = gf.chart
+    chart.font.name = BODY
+    chart.font.size = Pt(13)
+    chart.font.color.rgb = ONYX
+    pie = kind in ("pie", "doughnut")
+    if pie:
+        pts = chart.plots[0].series[0].points
+        for i in range(len(ch["categories"])):
+            pts[i].format.fill.solid()
+            pts[i].format.fill.fore_color.rgb = CHART_COLOURS[i % len(CHART_COLOURS)]
+        chart.has_legend = True
+        chart.legend.position = XL_LEGEND_POSITION.RIGHT
+        chart.legend.include_in_layout = False
+    else:
+        for i, se in enumerate(chart.plots[0].series):
+            col = CHART_COLOURS[i % len(CHART_COLOURS)]
+            if kind == "line":
+                se.format.line.color.rgb = col
+                se.format.line.width = Pt(3)
+                se.smooth = False
+                se.marker.format.fill.solid()
+                se.marker.format.fill.fore_color.rgb = col
+                se.marker.format.line.color.rgb = col
+            else:
+                se.format.fill.solid()
+                se.format.fill.fore_color.rgb = col
+        if kind != "line":
+            chart.plots[0].gap_width = 60
+        chart.has_legend = len(series) > 1
+        if chart.has_legend:
+            chart.legend.position = XL_LEGEND_POSITION.TOP
+            chart.legend.include_in_layout = False
+        va = chart.value_axis
+        va.has_major_gridlines = True
+        va.major_gridlines.format.line.color.rgb = RGBColor(0xD6, 0xD8, 0xDB)
+        va.format.line.fill.background()
+        va.tick_labels.font.color.rgb = ONYX_40
+        chart.category_axis.format.line.color.rgb = RGBColor(0xAD, 0xB1, 0xB8)
+        chart.category_axis.tick_labels.font.color.rgb = ONYX
+        if kind == "bar":
+            chart.category_axis.reverse_order = True  # first category at the top
+        if ch.get("format"):
+            va.tick_labels.number_format = ch["format"]
+            va.tick_labels.number_format_is_linked = False
+    plot = chart.plots[0]
+    plot.has_data_labels = ch.get("labels", True)
+    if plot.has_data_labels:
+        dl = plot.data_labels
+        dl.font.size = Pt(12)
+        dl.font.bold = True
+        dl.font.color.rgb = MIST if pie else ONYX
+        if ch.get("format"):
+            dl.number_format = ch["format"]
+            dl.number_format_is_linked = False
+        if not pie and kind != "line":
+            dl.position = XL_LABEL_POSITION.OUTSIDE_END
+    if has_side:
+        px = M + cw + Inches(0.5)
+        pw = CONTENT_W - cw - Inches(0.5)
+        rect(sl, px, y, pw, chh, PAPAYA, rounded=True, radius=0.08)
+        rect(sl, px + Inches(0.4), y + Inches(0.5), Inches(0.8), Pt(4), AMBER)
+        textbox(sl, px + Inches(0.4), y + Inches(0.75), pw - Inches(0.8), chh - Inches(1.2), s["takeaway"],
+                font=DISPLAY, size=22, color=DEEP_BLUE, line=1.25, track=-20, hl=BLUE_50)
+    if s.get("source"):
+        textbox(sl, M, y + chh + Inches(0.08), cw, Inches(0.3), f"Source: {s['source']}", font=BODY, size=11,
+                color=ONYX_40)
     footer(sl, n, deck.get("footer"))
     return sl
 
@@ -439,7 +736,11 @@ def l_image(prs, s, n, deck):
     ix = M if img_left else W - M - img_w
     tx = M + img_w + Inches(0.7) if img_left else M
     tw = CONTENT_W - img_w - Inches(0.7)
-    picture(sl, DECK_DIR / s["image"], ix, Inches(0.7), img_w, H - Inches(1.6))
+    if s.get("graphic"):
+        img = render_graphic(s["graphic"], img_w, H - Inches(1.6))
+    else:
+        img = DECK_DIR / s["image"]
+    picture(sl, img, ix, Inches(0.7), img_w, H - Inches(1.6))
     y = Inches(1.3)
     if s.get("tag"):
         tag(sl, tx, y, s["tag"])
@@ -491,7 +792,163 @@ LAYOUTS = {
     "title": l_title, "section": l_section, "content": l_content, "two_column": l_two_column,
     "cards": l_cards, "stats": l_stats, "process": l_process, "agenda": l_agenda, "quote": l_quote,
     "image": l_image, "statement": l_statement, "closing": l_closing,
+    "icon_grid": l_icon_grid, "chart": l_chart,
 }
+
+# ---- Planner: pick layouts from content, split overflow, lint copy -----------
+# How many items fit one slide, per layout (more are split across balanced continuation slides).
+CAPACITY = {"content": 8, "cards": 4, "stats": 4, "process": 6, "agenda": 8, "icon_grid": 6}
+LIST_KEY = {"content": "bullets", "cards": "cards", "stats": "stats", "process": "steps", "agenda": "items",
+            "icon_grid": "items"}
+LONG_BULLET = 90   # a bullet longer than this counts as "long": at most 4 long bullets per slide
+LIMITS = {"title": 60, "bullet": 110, "body": 320, "card": 140, "step": 90, "stat_label": 60, "quote": 280,
+          "statement": 110}
+NUMBER_RE = re.compile(r"^\s*(\d+ in \d+|[~≈<>+]?\s*[$€£]?\d[\d,.]*\s*(%|[kKmMbB]\b|x\b|\+)?\+?)\s+(.+)$")
+
+
+def chunks(items, cap):
+    """Split into the fewest slides of at most `cap`, as evenly as possible (7 -> 4+3, not 6+1)."""
+    k = max(1, -(-len(items) // cap))
+    base, extra = divmod(len(items), k)
+    out, i = [], 0
+    for j in range(k):
+        size = base + (1 if j < extra else 0)
+        out.append(items[i:i + size])
+        i += size
+    return out
+
+
+def as_point(p):
+    return p if isinstance(p, dict) else {"text": str(p)}
+
+
+def auto_layout(s):
+    """Choose a layout for {"layout": "auto", "points": [...], "kind"?: ...}. Returns (layout, slide)."""
+    pts = [as_point(p) for p in s.get("points", [])]
+    kind = s.get("kind", "")
+    base = {k: v for k, v in s.items() if k not in ("points", "kind", "layout")}
+    n = len(pts)
+    if n == 0:
+        return ("statement", dict(base, text=s.get("body") or s.get("title", ""))) if not s.get("title") else \
+               ("content", base)
+    # numbers: explicit values, or points that start with a figure ("7M international students")
+    if kind in ("numbers", "stats") or all("value" in p or NUMBER_RE.match(p.get("text", "")) for p in pts):
+        stats = []
+        for p in pts:
+            if "value" in p:
+                stats.append({"value": p["value"], "label": p.get("label") or p.get("title") or p.get("text", ""),
+                              "detail": p.get("detail") or (p.get("text") if p.get("label") or p.get("title") else None),
+                              "icon": p.get("icon")})
+            else:
+                m = NUMBER_RE.match(p["text"])
+                stats.append({"value": m.group(1).strip(), "label": m.group(3).strip(), "icon": p.get("icon")})
+        if kind == "chart":  # only chart numbers that share one unit and compare like with like
+            return "chart_or_stats", dict(base, stats=stats)
+        return "stats", dict(base, stats=stats)
+    if kind in ("steps", "process", "journey", "timeline") or any("date" in p for p in pts):
+        return "process", dict(base, steps=[{"title": p.get("title") or p.get("text"), "text": p.get("text") if p.get("title") else None,
+                                             "date": p.get("date"), "icon": p.get("icon", "auto")} for p in pts])
+    if kind == "agenda":
+        return "agenda", dict(base, items=[p.get("title") or p["text"] for p in pts])
+    if kind == "quote" or (n == 1 and pts[0].get("author")):
+        p = pts[0]
+        return "quote", dict(base, quote=p.get("text") or p.get("quote"), author=p.get("author"), role=p.get("role"))
+    if n == 1:
+        return "statement", dict(base, text=pts[0].get("title") or pts[0]["text"])
+    titled = all(p.get("title") for p in pts)
+    if kind == "compare" or (n == 2 and titled):
+        side = lambda p: {"heading": p.get("title"), "body": p.get("text") if not p.get("bullets") else None,
+                          "bullets": p.get("bullets")}
+        if n == 2:
+            return "two_column", dict(base, left=side(pts[0]), right=side(pts[1]))
+    if titled and (kind == "principles" or any(p.get("subtitle") for p in pts)) and n <= 8:
+        return "cards", dict(base, cards=[{"title": p["title"], "subtitle": p.get("subtitle"), "text": p.get("text"),
+                                           "icon": p.get("icon", "auto")} for p in pts])
+    if titled:
+        return "icon_grid", dict(base, items=[{"title": p["title"], "text": p.get("text"), "icon": p.get("icon", "auto")}
+                                              for p in pts])
+    # plain sentences
+    texts = [p["text"] for p in pts]
+    if 3 <= n <= 6 and kind == "features" and all(len(t) <= 40 for t in texts):
+        return "icon_grid", dict(base, items=[{"title": t, "icon": p.get("icon", "auto")} for t, p in zip(texts, pts)])
+    return "content", dict(base, bullets=texts)
+
+
+def plan(deck):
+    """Expand auto slides, split overflowing ones, and collect copy warnings."""
+    out = []
+    for idx, s in enumerate(deck["slides"], 1):
+        layout = s.get("layout") or ("auto" if "points" in s else "content")
+        why = "given"
+        if layout == "auto":
+            layout, s = auto_layout(s)
+            why = f"auto, {len(s.get(LIST_KEY.get(layout, ''), []) or []) or 'n/a'} points"
+            if layout == "chart_or_stats":
+                st = s.pop("stats")
+                vals = [re.sub(r"[^\d.]", "", str(x["value"])) for x in st]
+                if all(v and v.count(".") <= 1 for v in vals):
+                    layout = "chart"
+                    s["chart"] = {"type": "bar", "categories": [x["label"] for x in st],
+                                  "values": [float(v) for v in vals]}
+                    if all(str(x["value"]).strip().endswith("%") for x in st):
+                        s["chart"]["format"] = '0"%"'
+                    why = f"auto, {len(st)} numbers -> chart"
+                else:
+                    layout, s["stats"] = "stats", st
+        if layout not in LAYOUTS:
+            sys.exit(f"Slide {idx}: unknown layout '{layout}'. Options: auto, {', '.join(LAYOUTS)}")
+        key = LIST_KEY.get(layout)
+        items = s.get(key) if key else None
+        cap = CAPACITY.get(layout, 99)
+        if layout == "content" and items:
+            long_ = sum(len(str(b)) > LONG_BULLET for b in items)
+            cap = 4 if long_ >= 2 else (8 if all(len(str(b)) <= 60 for b in items) else 5)
+        if layout == "cards" and items and len(items) > 4:
+            layout, key, cap = "icon_grid", "items", 6  # 5+ principles read better as a grid
+            s = dict(s, items=[{"title": c["title"], "text": c.get("subtitle") or c.get("text"), "icon": c.get("icon", "auto")}
+                               for c in items])
+            items = s["items"]
+        parts = chunks(items, cap) if items and len(items) > cap else [items]
+        for j, part in enumerate(parts):
+            sl = dict(s)
+            if key and part is not None:
+                sl[key] = part
+            if len(parts) > 1:
+                if j > 0:
+                    sl["title"] = f"{s.get('title', '')} (continued)"
+                    sl.pop("tag", None)
+                    sl.pop("body", None)
+                if layout == "process":
+                    sl["start"] = 1 + sum(len(p) for p in parts[:j])
+            sl["layout"] = layout
+            sl["_src"] = idx
+            sl["_why"] = why + (f", split {j + 1}/{len(parts)}" if len(parts) > 1 else "")
+            out.append(sl)
+    return out
+
+
+def lint(slides):
+    warn = []
+    for n, s in enumerate(slides, 1):
+        where = f"slide {n} ({s['layout']})"
+        def chk(text, lim, what):
+            if text and len(str(text)) > lim:
+                warn.append(f"{where}: {what} is {len(str(text))} chars (aim for <= {lim}): \"{str(text)[:50]}...\"")
+        chk(re.sub(r"\s*\(continued\)$", "", s.get("title", "")), LIMITS["title"], "title")
+        chk(s.get("body"), LIMITS["body"], "body")
+        for b in s.get("bullets") or []:
+            chk(b, LIMITS["bullet"], "a bullet")
+        for c in (s.get("cards") or []) + (s.get("items") if s["layout"] == "icon_grid" else []) or []:
+            chk(c.get("text"), LIMITS["card"], f"'{c.get('title')}' text")
+        for st in s.get("steps") or []:
+            chk(st.get("text"), LIMITS["step"], f"step '{st.get('title')}' text")
+        for st in s.get("stats") or []:
+            chk(st.get("label"), LIMITS["stat_label"], f"stat '{st.get('value')}' label")
+        chk(s.get("quote"), LIMITS["quote"], "quote")
+        chk(s.get("text") if s["layout"] == "statement" else None, LIMITS["statement"], "statement")
+        if s["layout"] == "image" and not (s.get("image") or s.get("graphic")):
+            warn.append(f"{where}: needs an image path or a graphic spec")
+    return warn
 
 DECK_DIR = Path(".")
 TMP_DIR = None
@@ -502,6 +959,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("deck")
     ap.add_argument("-o", "--out")
+    ap.add_argument("--plan", action="store_true", help="print the layout chosen for every slide")
     a = ap.parse_args()
 
     deck_path = Path(a.deck).resolve()
@@ -517,19 +975,26 @@ def main():
     prs.core_properties.title = deck.get("title", "")
     prs.core_properties.author = deck.get("author", "Frontier Commons")
 
-    for n, s in enumerate(deck["slides"], 1):
-        layout = s.get("layout", "content")
-        if layout not in LAYOUTS:
-            sys.exit(f"Slide {n}: unknown layout '{layout}'. Options: {', '.join(LAYOUTS)}")
+    slides = plan(deck)
+    for n, s in enumerate(slides, 1):
         try:
-            sl = LAYOUTS[layout](prs, s, n, deck)
+            sl = LAYOUTS[s["layout"]](prs, s, n, deck)
         except KeyError as e:
-            sys.exit(f"Slide {n} ({layout}): missing required field {e}")
+            sys.exit(f"Slide {n} ({s['layout']}, from outline item {s['_src']}): missing required field {e}")
         if s.get("notes"):
             sl.notes_slide.notes_text_frame.text = s["notes"]
 
     prs.save(out)
-    print(f"✓ {out}  ({len(deck['slides'])} slides)")
+    print(f"✓ {out}  ({len(slides)} slides from {len(deck['slides'])} outline items)")
+    if a.plan:
+        for n, s in enumerate(slides, 1):
+            label = (s.get("title") or s.get("text") or s.get("quote") or "").replace("\n", " ")[:50]
+            print(f"  {n:>2}. {s['layout']:<11} {label}  [{s['_why']}]")
+    issues = lint(slides) + WARNINGS
+    if issues:
+        print("Copy check (shorten these, don't shrink fonts):")
+        for w in issues:
+            print("  - " + w)
 
 
 if __name__ == "__main__":
