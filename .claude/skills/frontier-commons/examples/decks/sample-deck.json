@@ -1,0 +1,36 @@
+{
+  "title": "Frontier Commons — Sample Deck",
+  "style": "formal",
+  "footer": "Frontier Commons",
+  "slides": [
+    {"layout": "title", "title": "Frontier\nCommons", "subtitle": "Partner Briefing", "date": "September 2026",
+     "notes": "Welcome everyone and thank them for coming."},
+    {"layout": "agenda", "title": "Today", "items": ["Who we are", "Why international students", "How we work together", "Next steps"]},
+    {"layout": "section", "title": "Who We Are", "kicker": "01"},
+    {"layout": "content", "tag": "Our Mission", "title": "Strengthening collaboration for **ISM**",
+     "body": "Frontier Commons is a shared space where ministries serving international students can learn, build, and grow together.",
+     "bullets": ["Missions on the bottom shelf — **no previous experience** required", "Building bridges between ministries, not competing", "Grounded in the realities of students worldwide"]},
+    {"layout": "stats", "title": "The opportunity", "stats": [
+      {"value": "7M", "label": "international students worldwide", "detail": "Studying outside their home country today."},
+      {"value": "5", "label": "stages of the student journey", "detail": "From pre-arrival to re-entry home."},
+      {"value": "1", "label": "shared commons", "detail": "For ministries to learn and build together."}]},
+    {"layout": "cards", "title": "Core Principles", "cards": [
+      {"title": "Accessible", "subtitle": "over academic", "text": "No previous experience, training, or interest required."},
+      {"title": "Collaborative", "subtitle": "over competitive", "text": "Building bridges and creating shared spaces."},
+      {"title": "Innovative", "subtitle": "over traditional", "text": "Fresh approaches through the innovation pipeline."},
+      {"title": "Global", "subtitle": "over Western-centric", "text": "Grounded in the perspectives of 7M students."}]},
+    {"layout": "process", "title": "The student journey", "steps": [
+      {"title": "Pre-Arrival", "text": "Anticipation, fear, hope"},
+      {"title": "Arrival & Orientation", "text": "Overwhelmed, lonely, culture shock"},
+      {"title": "Integration", "text": "Curious, conflicted, settled"},
+      {"title": "Leadership", "text": "Empowered, confident, purposeful"},
+      {"title": "Re-Entry Home", "text": "Reverse culture shock, determination"}]},
+    {"layout": "two_column", "title": "How we work together", "left": {"heading": "For ministries", "bullets": ["Shared research and data", "Coordinated programs", "Introductions to partners"]},
+     "right": {"heading": "For students", "body": "Friendships that begin on campus and continue after graduation.", "bullets": ["Mentoring", "Re-entry support"]}},
+    {"layout": "image", "image": "placeholder-photo.jpg", "tag": "Story", "title": "Friendships that cross borders",
+     "body": "A short story about the people behind the work. Use a real, relevant photo — no heavy filters.", "caption": "Photo: replace with your own"},
+    {"layout": "quote", "quote": "We want to help others see new perspectives — adding to the work that already exists, not replacing it.", "author": "Frontier Commons", "role": "Voice & Tone"},
+    {"layout": "statement", "tag": "Our hope", "text": "Empowering the next generation to share the gospel **confidently**."},
+    {"layout": "closing", "title": "Thank you", "subtitle": "Let's build this together.", "contact": "[your.email@example.org]\n[website]"}
+  ]
+}

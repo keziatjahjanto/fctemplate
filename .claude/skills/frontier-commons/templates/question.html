@@ -1,0 +1,31 @@
+<!-- default-theme: periwinkle -->
+<!-- fields: question*, tag, prompts (list of strings), format, time. A discussion prompt in a speech bubble. -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 4); }
+  .bubble { position: relative; background: #fff; border-radius: calc(var(--radius) * 2); padding: calc(var(--u) * 6); display: flex; gap: calc(var(--u) * 3); }
+  .bubble::after { content: ""; position: absolute; left: calc(var(--u) * 10); bottom: calc(var(--u) * -4.5); border-left: calc(var(--u) * 5) solid #fff; border-bottom: calc(var(--u) * 5) solid transparent; }
+  .theme-mist .bubble, .theme-papaya .bubble { background: #fff; }
+  .bubble .glyph { flex: 0 0 calc(var(--u) * 8); height: calc(var(--u) * 8); color: var(--deep-blue); }
+  .q { font-family: var(--display); font-weight: 700; color: var(--deep-blue); font-size: calc(var(--u) * 6.4); line-height: 1.12; letter-spacing: -0.02em; }
+  .q .hl { color: var(--blue-50); }
+  .aspect-wide .q { font-size: calc(var(--u) * 7); }
+  .meta { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.6); margin-top: calc(var(--u) * 2); }
+  .pill { display: inline-flex; align-items: center; gap: calc(var(--u) * 1); background: #fff; color: var(--onyx); font-family: var(--body); font-weight: 700;
+          font-size: calc(var(--u) * 2.6); padding: calc(var(--u) * 1.2) calc(var(--u) * 2.4); border-radius: 999px; }
+  .pill svg { width: calc(var(--u) * 3); height: calc(var(--u) * 3); }
+  .prompts { font-family: var(--body); font-size: calc(var(--u) * 3); line-height: 1.45; color: var(--fg); }
+  .theme-periwinkle .prompts { color: var(--onyx); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}}">
+  <div class="wrap">
+    <div><span class="tag">{{#tag}}{{tag}}{{/tag}}{{^tag}}Let's discuss{{/tag}}</span></div>
+    <div class="bubble"><div class="glyph">{{{chat_svg}}}</div><div class="q">{{question}}</div></div>
+    <div class="meta">
+      {{#format}}<span class="pill">{{{users_svg}}}{{format}}</span>{{/format}}
+      {{#time}}<span class="pill">{{{clock_svg}}}{{time}}</span>{{/time}}
+    </div>
+    <div>{{#prompts}}<div class="prompts">→ {{item}}</div>{{/prompts}}</div>
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

@@ -1,0 +1,42 @@
+{
+  "title": "Welcoming International Students — Volunteer Training",
+  "style": "teaching",
+  "slides": [
+    {"layout": "title", "session": "Volunteer training · 60 min", "title": "Welcoming international students",
+     "subtitle": "Simple ways to be a friend in the first few weeks", "presenter": "[Presenter name]", "date": "October 2026",
+     "notes": "Welcome people as they arrive. Invite them to sit with someone they don't know yet."},
+    {"layout": "auto", "kind": "agenda", "title": "Our time together", "points": [
+      {"title": "What it feels like to arrive", "time": "10 min"},
+      {"title": "The first few weeks", "time": "15 min"},
+      {"title": "Practice: a first conversation", "time": "20 min"},
+      {"title": "Questions and next steps", "time": "15 min"}]},
+    {"layout": "auto", "points": ["Think back to a time you were the newcomer. What helped you feel welcome?"],
+     "format": "Pairs", "time": "4 min", "prompts": ["Who noticed you?", "What did they say or do?"],
+     "notes": "Ask: Think back... Give people a minute of quiet first. Listen for: small, practical gestures. Transition: 'Students feel this every day for months.'"},
+    {"layout": "section", "title": "Arriving", "kicker": "Part 1"},
+    {"layout": "auto", "kind": "journey", "title": "What the first weeks can feel like", "points": [
+      {"title": "Pre-Arrival", "text": "Excited, nervous, hopeful"},
+      {"title": "Arrival", "text": "Tired, overwhelmed, lonely"},
+      {"title": "Settling in", "text": "Curious, homesick, adjusting"},
+      {"title": "Belonging", "text": "Known, confident, at home"}]},
+    {"layout": "auto", "title": "Small things that make a big difference", "points": [
+      "Learn how to say their name well",
+      "Offer a ride from the airport or to the store",
+      "Invite them for a meal at your home",
+      "Ask about their family and home country"]},
+    {"layout": "think_pair_share", "question": "What might make a student hesitate to accept an invitation?",
+     "notes": "Listen for: language worries, food, not wanting to be a burden, cultural norms about hospitality."},
+    {"layout": "section", "title": "Practice", "kicker": "Part 2"},
+    {"layout": "scenario", "story": "Mei has been on campus for two weeks. You meet her at a welcome event. She smiles but answers your questions with one or two words, and keeps checking her phone.",
+     "question": "What would you do?", "options": ["Ask a few more questions to keep the conversation going", "Share a little about yourself first", "Invite her to the next event and give her space", "Introduce her to another student from her country"],
+     "notes": "Show of hands for each option. There isn't one right answer; ask people to explain why they chose it."},
+    {"layout": "activity", "title": "A first conversation", "time": "10 min", "group": "Groups of 3",
+     "materials": "Conversation cards", "output": "One question that worked well",
+     "steps": ["One person plays a newly arrived student", "One person starts a friendly conversation", "One person observes and takes notes", "Switch roles after 3 minutes"]},
+    {"layout": "auto", "points": ["What surprised you in the practice?", "Which question opened up the conversation most?", "What would you do differently next time?"]},
+    {"layout": "break", "title": "Let's take a break", "time": "10 min", "text": "Coffee and tea are at the back."},
+    {"layout": "recap", "points": ["Arriving is hard, even for confident students", "Small, practical help builds trust", "Good questions open doors; listen more than you talk"],
+     "next_step": "Invite one international student for coffee **this week**."},
+    {"layout": "closing", "title": "Thank you!", "subtitle": "What questions are still on your mind?", "contact": "[your.email@example.org]"}
+  ]
+}

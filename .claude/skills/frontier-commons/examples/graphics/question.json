@@ -1,0 +1,4 @@
+[
+ {"template":"question","size":"square","name":"question-square","fields":{"question":"Think back to a time you were the newcomer. What helped you feel **welcome**?","format":"Pairs","time":"4 min","prompts":["Who noticed you?","What did they say or do?"]}},
+ {"template":"question","size":"portrait","theme":"papaya","name":"question-portrait","logo":"icon","fields":{"tag":"This week's question","question":"How could your church welcome a student who is far from home?"}}
+]
