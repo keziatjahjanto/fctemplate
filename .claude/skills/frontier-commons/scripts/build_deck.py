@@ -39,7 +39,8 @@ Layouts and their fields (* = required):
     recap       points* (<=4), next_step, title
     break       title, time, text
 
-Deck "style": "teaching" (default: warm, discussion-based) or "formal" (briefings, reports).
+Deck "style": "teaching" (default; the Plug In editorial look), "workshop" (warm, playful) or "formal" (briefings).
+Deck "font_scale" resizes all text (default 0.9 in the teaching style, 1.0 otherwise).
 Every slide accepts "notes" (speaker notes) and "icons": false.
 Text supports **highlight** (bold + brand accent colour) and *italic*.
 Image paths are relative to the JSON file.
@@ -85,6 +86,10 @@ CONTENT_W = W - 2 * M
 def bg(slide, color):
     fill = slide.background.fill
     fill.solid()
+    if STYLE == "teaching" and color == MIST:  # white page with the grey dot-grid band on the left
+        fill.fore_color.rgb = WHITE
+        slide.shapes.add_picture(str(ASSETS / "textures" / "dotband-grey.png"), -Inches(0.05), 0, Inches(1.58), H)
+        return
     fill.fore_color.rgb = color
 
 
@@ -126,8 +131,8 @@ def add_runs(par, text, font, size, color, bold=False, italic=False, hl=None, tr
         r.text = tok[2:-2] if is_hl else tok[1:-1] if is_it else tok
         f = r.font
         f.name = font
-        f.size = Pt(size)
-        f.bold = True if is_hl else bold
+        f.size = Pt(round(size * FONT_SCALE, 1))
+        f.bold = (bold if STYLE == "teaching" else True) if is_hl else bold  # teaching highlights by colour only
         f.italic = True if is_it else italic
         f.color.rgb = (hl or color) if is_hl else color
         if track:
@@ -327,6 +332,8 @@ def tag(slide, x, y, text):
 def footer(slide, n, text, dark=False):
     color = MIST if dark else ONYX_40
     if STYLE == "teaching":
+        return
+    if STYLE == "workshop":
         text = None
     logo(slide, "icon-mist" if dark else "icon-deep-blue", W - M - Inches(0.32), H - Inches(0.62), Inches(0.32))
     textbox(slide, M, H - Inches(0.58), Inches(6), Inches(0.3), f"{n}   {text}" if text else str(n),
@@ -347,6 +354,8 @@ def est_lines(text, width, size, bold=False):
 
 def header(slide, s, top=Inches(0.7), color=DEEP_BLUE, size=36):
     """Optional amber tag + slide title. Returns y where content can start."""
+    if STYLE == "teaching" and color != MIST:
+        return e_header(slide, s)
     y = top
     if s.get("tag"):
         tag(slide, M, y, s["tag"])
@@ -508,7 +517,7 @@ def l_stats(prs, s, n, deck):
 def l_process(prs, s, n, deck):
     """Sequential steps / journey / timeline. Steps may carry a `date` (shown above the dot) and an icon."""
     sl = prs.slides.add_slide(prs.slide_layouts[6])
-    bg(sl, PAPAYA)
+    bg(sl, MIST if STYLE == "teaching" else PAPAYA)
     y = header(sl, s)
     steps = s["steps"][:6]
     k = len(steps)
@@ -1179,6 +1188,728 @@ def t_closing(prs, s, n, deck):
 TEACHING_OVERRIDES = {"title": t_title, "content": t_content, "agenda": t_agenda, "closing": t_closing}
 
 
+# ---- Teaching style (default): calm, editorial, white ------------------------
+# Modelled on Frontier Commons' own Fall Fellows "Plug In" sessions: white slides with a grey
+# dot-grid band on the left, bold Deep Blue titles, one highlighted word in Blue 35%, spark
+# bullets, uppercase letter-spaced labels over short rules, hairline dividers, no footers.
+BLUE_35 = RGBColor(0x15, 0x21, 0x9D)
+RULE = RGBColor(0xD6, 0xD8, 0xDB)
+TEX = ASSETS / "textures"
+EM = Inches(0.83)            # editorial side margin (120px at 1920)
+ETOP = Inches(0.67)          # title top (96px)
+
+
+def set_alpha(shape, opacity):
+    """Fill opacity 0-1 on an autoshape (PowerPoint alpha)."""
+    srgb = shape.fill._xPr.find(qn("a:solidFill")).find(qn("a:srgbClr"))
+    a = srgb.makeelement(qn("a:alpha"), {"val": str(int(opacity * 100000))})
+    srgb.append(a)
+
+
+def hairline(sl, x, y, w, color=RULE):
+    return rect(sl, x, y, w, Pt(1), color)
+
+
+def label(sl, x, y, w, text, size=20, color=BLUE_35, align=PP_ALIGN.CENTER, h=None):
+    """Uppercase, letter-spaced DM Sans label (the guide's section-header treatment)."""
+    return textbox(sl, x, y, w, h or Inches(0.8), str(text).upper(), font=BODY, size=size, color=color, bold=True,
+                   align=align, track=160, line=1.2)
+
+
+def auto_highlight(text):
+    """Highlight the last line (or last word) of a statement when the writer didn't mark one."""
+    if "**" in text:
+        return text
+    if "\n" in text:
+        head, last = text.rsplit("\n", 1)
+        return f"{head}\n**{last}**"
+    words = text.split(" ")
+    return " ".join(words[:-1] + [f"**{words[-1]}**"]) if len(words) > 1 else text
+
+
+def e_header(sl, s, size=26):
+    y = ETOP
+    if s.get("tag"):
+        label(sl, EM, y, Inches(8), s["tag"], size=13, align=PP_ALIGN.LEFT, h=Inches(0.35))
+        y += Inches(0.4)
+    textbox(sl, EM, y, W - 2 * EM, Inches(1.3), s.get("title", ""), font=DISPLAY, size=size, color=DEEP_BLUE,
+            bold=True, track=-35, line=1.0, hl=BLUE_35)
+    y += Pt(size) * 1.05 * est_lines(s.get("title", ""), W - 2 * EM, size, bold=True) + Inches(0.12)
+    if s.get("lead"):
+        textbox(sl, EM, y, W - 2 * EM, Inches(0.5), s["lead"], font=BODY, size=15, color=ONYX_40)
+        y += Inches(0.45)
+    return y + Inches(0.25)
+
+
+def spark_list(sl, x, y, w, h, items, size=22, even=True):
+    """Spark-bulleted points, spread evenly down the area like the Plug In slides."""
+    heights = [Pt(size) * 1.3 * est_lines(t, w - Inches(0.55), size) for t in items]
+    free = h - sum(heights)
+    gap = free / (len(items) + 1) if even else Inches(0.3)
+    gap = max(Inches(0.18), min(gap, Inches(0.9)))
+    yy = y + (gap if even else 0)
+    for t, hh in zip(items, heights):
+        icon(sl, "spark", x, yy + Pt(size) * 0.18, Inches(0.3), "blue")
+        textbox(sl, x + Inches(0.52), yy, w - Inches(0.55), hh + Inches(0.1), t, font=BODY, size=size, color=ONYX,
+                line=1.3, hl=BLUE_35)
+        yy += hh + gap
+
+
+def e_content(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, s)
+    if s.get("body"):
+        textbox(sl, EM + Inches(0.9), y, Inches(10.4), Inches(1.4), s["body"], font=BODY, size=20, color=ONYX,
+                line=1.4, hl=BLUE_35)
+        y += Pt(20) * 1.4 * est_lines(s["body"], Inches(10.4), 20) + Inches(0.2)
+    items = s.get("bullets") or []
+    area = H - y - Inches(0.55)
+    if len(items) > 5:
+        half = (len(items) + 1) // 2
+        cw = (W - 2 * EM - Inches(0.9) - Inches(0.6)) / 2
+        spark_list(sl, EM + Inches(0.9), y, Emu(int(cw)), area, items[:half], size=19)
+        spark_list(sl, EM + Inches(0.9) + Emu(int(cw + Inches(0.6))), y, Emu(int(cw)), area, items[half:], size=19)
+    elif items:
+        spark_list(sl, EM + Inches(0.9), y, Inches(10.9), area, items)
+    return sl
+
+
+def e_definition(prs, s, n, deck):
+    """Title plus one big centred statement ("What [topic] is")."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, s)
+    text = s.get("text") or s.get("body", "")
+    size = 36 if len(text) <= 110 else 30
+    textbox(sl, Inches(1.8), y, W - Inches(3.6), H - y - Inches(0.9), text, font=DISPLAY, size=size,
+            color=DEEP_BLUE, line=1.14, track=-30, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    return sl
+
+
+def e_statement(prs, s, n, deck):
+    """A centred statement slide: section openers, pauses, big ideas."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    text = s.get("text") or s.get("title", "")
+    marked = auto_highlight(text) if s.get("highlight", True) else text
+    size = s.get("size") or (42 if len(text) <= 40 else 34 if len(text) <= 90 else 30)
+    top = Inches(1.2)
+    if s.get("kicker") or s.get("tag"):
+        label(sl, Inches(1.5), Inches(2.0), W - Inches(3), s.get("kicker") or s.get("tag"), size=14, h=Inches(0.4))
+    textbox(sl, Inches(1.5), top, W - Inches(3), H - Inches(2.4), marked, font=DISPLAY, size=size, color=DEEP_BLUE,
+            line=1.05, track=-35, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    if s.get("time"):
+        label(sl, Inches(1.5), H - Inches(1.5), W - Inches(3), s["time"], size=14, h=Inches(0.4))
+    return sl
+
+
+def e_section(prs, s, n, deck):
+    return e_statement(prs, dict(s, text=s["title"]), n, deck)
+
+
+def l_pillars(prs, s, n, deck):
+    """2-4 typographic columns: LABEL, short rule, a sentence, optional reference ("Where it shows up")."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, WHITE)
+    y = e_header(sl, s)
+    items = s["items"][:4]
+    k = len(items)
+    spots = consistent_icons([resolve_icon(it, s, it.get("label") or it.get("title"), it.get("text")) for it in items]) \
+        if s.get("icons", True) is not False else [None] * k
+    spot_h = Inches(1.3) if any(spots) else 0
+    pad = Inches(0.3)
+    gap = Inches(0.55)
+    cw = (W - 2 * EM - 2 * pad - gap * (k - 1)) / k
+    size = 17 if k == 4 else 18
+    lab_lines = max(est_lines(str(it.get("label") or it.get("title")).upper(), cw, 20, bold=True) for it in items)
+    lab_h = Pt(20) * 1.25 * lab_lines * 1.15
+    blocks = [spot_h + lab_h + Inches(0.35) + Pt(size) * 1.35 * est_lines(it.get("text", ""), cw, size)
+              + (Inches(0.45) if it.get("ref") else 0) for it in items]
+    area = H - y - Inches(0.8)
+    top = y + max(Inches(0.1), (area - max(blocks)) / 2)
+    for i, it in enumerate(items):
+        x = EM + pad + Emu(int((cw + gap) * i))
+        iw = Emu(int(cw))
+        if spots[i]:
+            ss = Inches(1.15)
+            spot(sl, spots[i], x + Emu(int((cw - ss) / 2)), top, ss, disc=[AMBER, PERIWINKLE][i % 2])
+        lt = top + spot_h
+        label(sl, x, lt, iw, it.get("label") or it.get("title"), h=lab_h)
+        rw = Inches(1.3)
+        rect(sl, x + Emu(int((cw - rw) / 2)), lt + lab_h + Inches(0.1), rw, Pt(1), PERIWINKLE)
+        text = it.get("text", "")
+        quote = it.get("quote") or text.startswith(("“", '"'))
+        ty = lt + lab_h + Inches(0.3)
+        textbox(sl, x, ty, iw, Inches(2.6), text, font=BODY, size=size, color=ONYX, italic=bool(quote), line=1.35,
+                align=PP_ALIGN.CENTER, hl=BLUE_35)
+        if it.get("ref"):
+            ry = ty + Pt(size) * 1.35 * est_lines(text, cw, size) + Inches(0.15)
+            textbox(sl, x, ry, iw, Inches(0.4), it["ref"], font=BODY, size=15, color=DEEP_BLUE, bold=True,
+                    align=PP_ALIGN.CENTER)
+    if s.get("note"):
+        textbox(sl, EM, H - Inches(0.75), W - 2 * EM, Inches(0.35), s["note"], font=BODY, size=12, color=ONYX_40,
+                italic=True, align=PP_ALIGN.CENTER)
+    return sl
+
+
+def numbered_rows(sl, x, y, w, items, size=23, num_color=BLUE_35, right=None):
+    """Hairline-separated numbered rows (reflection questions, agenda, steps). `right` = optional right labels."""
+    for i, t in enumerate(items):
+        hairline(sl, x, y, w)
+        yy = y + Inches(0.24)
+        textbox(sl, x, yy + Pt(size) * 0.1, Inches(0.5), Inches(0.5), str(i + 1), font=DISPLAY, size=int(size * 0.74),
+                color=num_color, bold=True, track=-30)
+        tw = w - Inches(0.6) - (Inches(1.6) if right else 0)
+        textbox(sl, x + Inches(0.6), yy, tw, Inches(1.2), t, font=DISPLAY, size=size, color=DEEP_BLUE, line=1.2,
+                track=-25, hl=BLUE_35)
+        if right and right[i]:
+            label(sl, x + w - Inches(1.6), yy + Pt(size) * 0.2, Inches(1.6), right[i], size=12, align=PP_ALIGN.RIGHT,
+                  h=Inches(0.35))
+        y = yy + Pt(size) * 1.2 * est_lines(t, tw, size) + Inches(0.34)
+    return y
+
+
+def e_questions(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, dict(s, title=s.get("title", "Reflection questions")))
+    y += Inches(0.2)
+    y = numbered_rows(sl, EM, y, Inches(9.9), s["questions"])
+    meta = " · ".join(x for x in (s.get("format"), s.get("time")) if x)
+    if meta:
+        label(sl, EM, y + Inches(0.2), Inches(6), meta, size=13, align=PP_ALIGN.LEFT, h=Inches(0.35))
+    return sl
+
+
+def e_question(prs, s, n, deck):
+    """One open question for the room, centred, with format/time and follow-up prompts."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    meta = " · ".join(x for x in (s.get("tag", "Discuss"), s.get("format"), s.get("time")) if x)
+    label(sl, Inches(1.5), Inches(1.25), W - Inches(3), meta, size=14, h=Inches(0.4))
+    q = s["question"]
+    size = 40 if len(q) <= 80 else 34
+    prompts = s.get("prompts") or []
+    qh = Inches(3.2) if prompts else Inches(4.3)
+    textbox(sl, Inches(1.6), Inches(1.75), W - Inches(3.2), qh, q, font=DISPLAY, size=size, color=DEEP_BLUE,
+            line=1.14, track=-30, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    if prompts:
+        yy = Inches(1.75) + qh + Inches(0.25)
+        hairline(sl, Inches(3.0), yy, W - Inches(6.0))
+        textbox(sl, Inches(2.5), yy + Inches(0.3), W - Inches(5.0), Inches(1.4), "\n".join(prompts[:3]), font=BODY,
+                size=16, color=ONYX, italic=True, line=1.5, align=PP_ALIGN.CENTER)
+    return sl
+
+
+def e_quote(prs, s, n, deck):
+    """A big centred quote, with an optional reflection question under a hairline."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    q = s["quote"].strip()
+    if not q.startswith(("“", '"')):
+        q = f"“{q}”"
+    size = 36 if len(q) <= 120 else 30
+    follow = s.get("question") or s.get("prompt")
+    textbox(sl, Inches(1.6), Inches(1.0), W - Inches(3.2), Inches(3.6) if follow else Inches(4.8), q, font=DISPLAY,
+            size=size, color=DEEP_BLUE, line=1.14, track=-30, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+            hl=BLUE_35)
+    y = Inches(4.75)
+    if s.get("author"):
+        who = s["author"] + (f", {s['role']}" if s.get("role") else "")
+        textbox(sl, Inches(2), y - Inches(0.1), W - Inches(4), Inches(0.4), who, font=BODY, size=15, color=ONYX_40,
+                align=PP_ALIGN.CENTER)
+        y += Inches(0.45)
+    if follow:
+        hairline(sl, Inches(3.0), y, W - Inches(6.0))
+        textbox(sl, Inches(2.5), y + Inches(0.3), W - Inches(5.0), Inches(1.2), follow, font=BODY, size=15,
+                color=ONYX, italic=True, line=1.4, align=PP_ALIGN.CENTER)
+    return sl
+
+
+def e_recap(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, dict(s, title=s.get("title", "Recap")))
+    pts = s.get("points", [])[:5]
+    bottom = H - Inches(0.55) - (Inches(1.4) if s.get("next_step") else 0)
+    spark_list(sl, EM + Inches(0.9), y, Inches(10.9), bottom - y, pts)
+    if s.get("next_step"):
+        yy = bottom + Inches(0.1)
+        hairline(sl, EM + Inches(0.9), yy, Inches(10.9))
+        label(sl, EM + Inches(0.9), yy + Inches(0.25), Inches(4), s.get("next_label", "Your next step"), size=13,
+              align=PP_ALIGN.LEFT, h=Inches(0.35))
+        textbox(sl, EM + Inches(0.9), yy + Inches(0.6), Inches(10.9), Inches(0.7), s["next_step"], font=DISPLAY,
+                size=22, color=DEEP_BLUE, line=1.2, track=-25, hl=BLUE_35)
+    return sl
+
+
+def e_break(prs, s, n, deck):
+    return e_statement(prs, dict(s, text=s.get("title", "Let's take a\npause")), n, deck)
+
+
+def l_tool(prs, s, n, deck):
+    """A method or template (Empathy Map, Personas): labelled rows on the left, an example image on the right."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, s)
+    rows = s.get("rows") or [{"label": k.replace("_", " "), "text": s[k]} for k in ("purpose", "goal", "keep_in_mind")
+                             if s.get(k)]
+    lw = Inches(3.75)
+    yy = y + Inches(0.05)
+    for i, r in enumerate(rows[:4]):
+        if i:
+            hairline(sl, EM, yy - Inches(0.12), lw)
+        label(sl, EM, yy, lw, r["label"], size=12, align=PP_ALIGN.LEFT, h=Inches(0.3))
+        textbox(sl, EM, yy + Inches(0.32), lw, Inches(1.4), r["text"], font=BODY, size=14, color=ONYX, line=1.35)
+        yy += Inches(0.32) + Pt(14) * 1.35 * est_lines(r["text"], lw, 14) + Inches(0.35)
+    fx = EM + lw + Inches(0.45)
+    fw = W - EM - fx
+    fh = H - y - Inches(0.55)
+    frame = rect(sl, fx, y, fw, fh, WHITE)
+    frame.line.color.rgb = RULE
+    frame.line.width = Pt(0.75)
+    if s.get("image"):
+        im = Image.open(DECK_DIR / s["image"])
+        iw, ih = im.size
+        scale = min((fw - Inches(0.3)) / iw, (fh - Inches(0.3)) / ih)
+        pw, ph = int(iw * scale), int(ih * scale)
+        sl.shapes.add_picture(str(DECK_DIR / s["image"]), fx + (fw - pw) // 2, y + (fh - ph) // 2, pw, ph)
+    else:
+        textbox(sl, fx, y, fw, fh, s.get("image_caption", "[Add an example image]"), font=BODY, size=14,
+                color=ONYX_40, italic=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    return sl
+
+
+def e_agenda(prs, s, n, deck):
+    items = [i if isinstance(i, dict) else {"title": i} for i in s["items"]]
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, dict(s, title=s.get("title", "Today")))
+    numbered_rows(sl, EM, y + Inches(0.15), Inches(10.8), [i["title"] for i in items], size=23,
+                  right=[i.get("time") for i in items])
+    return sl
+
+
+def e_dark(sl, image=None):
+    """Deep Blue ground with the title treatment: optional photo under an overlay, a skewed band and dots."""
+    bg(sl, DEEP_BLUE)
+    if image:
+        picture(sl, DECK_DIR / image, Inches(2.58), Inches(0.62), Inches(9.6), Inches(5.7), radius_in=0)
+        ov = rect(sl, 0, 0, W, H, DEEP_BLUE)
+        set_alpha(ov, 0.82)
+    band = sl.shapes.add_shape(MSO_SHAPE.PARALLELOGRAM, Inches(-1.4), Inches(-0.2), Inches(4.4), H + Inches(0.6))
+    band.fill.solid()
+    band.fill.fore_color.rgb = BLUE_35
+    band.line.fill.background()
+    band.shadow.inherit = False
+    band.adjustments[0] = 0.28
+    set_alpha(band, 0.55)
+    sl.shapes.add_picture(str(TEX / "dots-periwinkle.png"), Inches(-0.28), H - Inches(5.28), Inches(2.5), Inches(5.28))
+
+
+def e_title(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    e_dark(sl, s.get("image"))
+    x = Inches(0.76)
+    label(sl, x, Inches(1.35), Inches(8), s.get("kicker", "Frontier Commons"), size=17, color=WHITE,
+          align=PP_ALIGN.LEFT, h=Inches(0.45))
+    title = s["title"].upper()
+    lines = title.count("\n") + 1
+    size = 100 if lines <= 2 and max(len(l) for l in title.split("\n")) <= 12 else 72
+    ty = Inches(1.95)
+    textbox(sl, x, ty, Inches(11.5), Pt(size) * 0.95 * lines + Inches(0.3), title, font=DISPLAY, size=size,
+            color=WHITE, bold=True, line=0.88, track=-45)
+    sy = ty + Pt(size) * 0.9 * lines + Inches(0.15)
+    if s.get("series"):
+        textbox(sl, x, sy, Inches(11.5), Inches(1.4), s["series"].upper(), font=DISPLAY, size=int(size * 0.8),
+                color=AMBER, bold=True, italic=True, line=0.95, track=-30)
+    elif s.get("subtitle"):
+        textbox(sl, x, sy + Inches(0.3), Inches(10), Inches(1.2), s["subtitle"], font=DISPLAY, size=28, color=PERI_82,
+                line=1.2)
+    info = s.get("info") or "  ·  ".join(x_ for x_ in (s.get("session"), s.get("date")) if x_)
+    if info:
+        textbox(sl, x, H - Inches(0.95), Inches(8), Inches(0.4), info, font=BODY, size=14, color=WHITE)
+    if s.get("org"):
+        textbox(sl, W - Inches(6.8), H - Inches(0.95), Inches(6.1), Inches(0.4), s["org"], font=BODY, size=14,
+                color=WHITE, align=PP_ALIGN.RIGHT)
+    else:
+        logo(sl, "wordmark-horizontal-mist", W - Inches(3.7), H - Inches(0.98), Inches(0.32))
+    return sl
+
+
+def e_closing(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    e_dark(sl)
+    x = Inches(0.76)
+    textbox(sl, x, Inches(2.0), Inches(11.5), Inches(1.6), s.get("title", "Thank you").upper(), font=DISPLAY,
+            size=88, color=WHITE, bold=True, line=0.9, track=-45)
+    if s.get("subtitle"):
+        textbox(sl, x, Inches(3.55), Inches(11), Inches(1.0), s["subtitle"], font=DISPLAY, size=30, color=AMBER,
+                bold=True, italic=True, track=-20)
+    if s.get("contact"):
+        textbox(sl, x, Inches(4.7), Inches(9), Inches(1.0), s["contact"], font=BODY, size=16, color=WHITE, line=1.4)
+    logo(sl, "wordmark-horizontal-mist", W - Inches(3.7), H - Inches(0.98), Inches(0.32))
+    return sl
+
+
+def e_tps(prs, s, n, deck):
+    steps = [{"label": f"Think · {s.get('think_time', '2 min')}", "text": s.get("think", "On your own, jot down your first thoughts.")},
+             {"label": f"Pair · {s.get('pair_time', '4 min')}", "text": s.get("pair", "Share with the person next to you. What's similar? What's different?")},
+             {"label": f"Share · {s.get('share_time', '5 min')}", "text": s.get("share", "A few pairs share one idea with the whole room.")}]
+    return l_pillars(prs, dict(s, title=s["question"], items=steps, tag=s.get("tag", "Think · Pair · Share")), n, deck)
+
+
+def e_activity(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    y = e_header(sl, dict(s, tag=s.get("tag", "Try it")))
+    numbered_rows(sl, EM, y + Inches(0.1), Inches(7.4), s.get("steps", [])[:5], size=20)
+    px = EM + Inches(8.0)
+    pw = W - EM - px
+    yy = y + Inches(0.1)
+    for lab, val in (("Time", s.get("time")), ("Groups", s.get("group")), ("You'll need", s.get("materials")),
+                     ("Bring back", s.get("output"))):
+        if not val:
+            continue
+        hairline(sl, px, yy, pw)
+        label(sl, px, yy + Inches(0.2), pw, lab, size=12, align=PP_ALIGN.LEFT, h=Inches(0.3))
+        textbox(sl, px, yy + Inches(0.5), pw, Inches(0.9), val, font=BODY, size=16, color=ONYX, line=1.3)
+        yy += Inches(0.5) + Pt(16) * 1.3 * est_lines(val, pw, 16) + Inches(0.3)
+    return sl
+
+
+def e_scenario(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    label(sl, EM, ETOP, Inches(5), s.get("tag", "Scenario"), size=13, align=PP_ALIGN.LEFT, h=Inches(0.35))
+    lw = Inches(6.1)
+    textbox(sl, EM, ETOP + Inches(0.5), lw, H - ETOP - Inches(1.2), s["story"], font=DISPLAY, size=26,
+            color=DEEP_BLUE, line=1.25, track=-25, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    rx = EM + lw + Inches(0.7)
+    rw = W - EM - rx
+    q = s.get("question", "What would you do?")
+    textbox(sl, rx, ETOP + Inches(0.5), rw, Inches(1.0), q, font=DISPLAY, size=26, color=DEEP_BLUE, bold=True,
+            track=-30, line=1.1)
+    y = ETOP + Inches(0.6) + Pt(26) * 1.15 * est_lines(q, rw, 26, bold=True) + Inches(0.2)
+    for i, o in enumerate(s.get("options", [])[:4]):
+        hairline(sl, rx, y, rw)
+        textbox(sl, rx, y + Inches(0.22), Inches(0.5), Inches(0.5), "ABCD"[i], font=DISPLAY, size=17, color=BLUE_35,
+                bold=True)
+        textbox(sl, rx + Inches(0.5), y + Inches(0.18), rw - Inches(0.5), Inches(1), o, font=BODY, size=17,
+                color=ONYX, line=1.3)
+        y += Inches(0.18) + Pt(17) * 1.3 * est_lines(o, rw - Inches(0.5), 17) + Inches(0.3)
+    return sl
+
+
+EDITORIAL_OVERRIDES = {"title": e_title, "content": e_content, "section": e_section, "statement": e_statement,
+                       "questions": e_questions, "question": e_question, "quote": e_quote, "recap": e_recap,
+                       "break": e_break, "agenda": e_agenda, "closing": e_closing, "think_pair_share": e_tps,
+                       "activity": e_activity, "scenario": e_scenario}
+
+
+# ---- Teaching style, illustrated (chosen direction) --------------------------
+# Spot illustrations built only from brand shapes: a Periwinkle disc, a Deep Blue rounded tile holding a
+# Mist line icon, an Amber dot and a navy dot texture; smaller "spots" are a coloured disc behind a
+# Deep Blue line icon (the guide's line-art-with-one-fill look). Bullet slides use a Papaya side panel.
+def illo(sl, name, x, y, s, disc=None):
+    disc = disc or PERIWINKLE
+    x, y, s = int(x), int(y), int(s)
+    oval(sl, x, y, int(s * 0.82), disc)
+    sl.shapes.add_picture(str(TEX / "dots-navy.png"), x + int(s * 0.66), y + int(s * 0.02), int(s * 0.3), int(s * 0.3))
+    rect(sl, x + int(s * 0.30), y + int(s * 0.34), int(s * 0.58), int(s * 0.58), DEEP_BLUE, rounded=True, radius=0.2)
+    icon(sl, name, x + int(s * 0.38), y + int(s * 0.42), int(s * 0.42), "mist")
+    oval(sl, x + int(s * 0.12), y + int(s * 0.70), int(s * 0.16), AMBER)
+
+
+def spot(sl, name, x, y, s, disc=AMBER):
+    """Coloured disc with a Deep Blue line icon overlapping it."""
+    x, y, s = int(x), int(y), int(s)
+    oval(sl, x, y + int(s * 0.1), int(s * 0.75), disc)
+    icon(sl, name, x + int(s * 0.2), y + int(s * 0.05), int(s * 0.75), "deep-blue")
+
+
+def topic_icon(s, *texts):
+    return s.get("icon") if s.get("icon") in ICON_CATALOG else (pick_icon(*texts) or "sparkles")
+
+
+def i_section(prs, s, n, deck, text=None, icon_name=None, graphic=None):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, PAPAYA)
+    text = text or s["title"]
+    marked = auto_highlight(text)
+    lines = text.count("\n") + 1
+    longest = max(len(l) for l in text.split("\n"))
+    size = 62 if longest <= 14 else 50 if longest <= 20 else 40
+    block = Pt(size) * 0.98 * lines
+    top = (H - block) / 2
+    if s.get("kicker"):
+        label(sl, Inches(0.9), top - Inches(0.6), Inches(6), s["kicker"], size=14, align=PP_ALIGN.LEFT, h=Inches(0.4))
+    textbox(sl, Inches(0.9), top, Inches(6.9), block + Inches(0.4), marked, font=DISPLAY, size=size, color=DEEP_BLUE,
+            bold=True, line=0.95, track=-45, hl=BLUE_35)
+    if s.get("time"):
+        label(sl, Inches(0.9), top + block + Inches(0.35), Inches(6), s["time"], size=14, align=PP_ALIGN.LEFT,
+              h=Inches(0.4))
+    if graphic:
+        graphic(sl)
+    else:
+        illo(sl, icon_name or topic_icon(s, text.replace("\n", " ")), Inches(8.3), Inches(1.75), Inches(3.8))
+    return sl
+
+
+def ripples(sl, cx=Inches(10.2), cy=Inches(3.75), r=Inches(1.9)):
+    """Calm 'breathe' graphic for pauses: concentric Periwinkle rings around an Amber centre."""
+    for scale, colour in ((1.0, RGBColor(0xEC, 0xEA, 0xFA)), (0.76, PERI_91), (0.54, RGBColor(0xBC, 0xB4, 0xEE)),
+                          (0.33, PERIWINKLE)):
+        rr = int(r * scale)
+        oval(sl, cx - rr, cy - rr, 2 * rr, colour)
+    rr = int(r * 0.14)
+    oval(sl, cx - rr, cy - rr, 2 * rr, AMBER)
+    sl.shapes.add_picture(str(TEX / "dots-navy.png"), cx + int(r * 0.62), cy - int(r * 1.12), int(r * 0.55), int(r * 0.55))
+
+
+def i_break(prs, s, n, deck):
+    return i_section(prs, s, n, deck, text=s.get("title", "Let's take a\npause"),
+                     graphic=None if s.get("icon") else ripples, icon_name=s.get("icon"))
+
+
+PANEL_ICON = Inches(1.4)
+
+
+def panel(sl, s, deck, title, icon_name, max_d=None):
+    """Papaya panel on the left with a kicker, the title and a big Amber-disc illustration."""
+    bg(sl, WHITE)
+    pw = Inches(4.86)
+    p = rect(sl, -Inches(0.8), 0, pw + Inches(0.8), H, PAPAYA, rounded=True, radius=0.1)
+    kicker = s.get("kicker") or deck.get("kicker")
+    if kicker:  # small label at the top, as originally
+        label(sl, Inches(0.76), Inches(0.76), pw - Inches(1.2), kicker, size=12, align=PP_ALIGN.LEFT, h=Inches(0.3))
+    y = Inches(1.68)  # title sits lower and larger than the label
+    size = 37 if len(title) <= 40 else 30 if len(title) <= 60 else 25
+    tw = pw - Inches(1.3)
+    textbox(sl, Inches(0.76), y, tw, Inches(3.2), title, font=DISPLAY, size=size, color=DEEP_BLUE,
+            bold=True, line=1.0, track=-35, hl=BLUE_35)
+    title_bottom = y + Pt(size) * 1.08 * est_lines(title, tw, size, bold=True)
+    room = H - Inches(0.9) - title_bottom - Inches(0.5)          # space left for the illustration
+    d = int(max_d or PANEL_ICON)  # one size on every bullet slide, so the deck feels consistent
+    if room >= d * 1.12:
+        oval(sl, Inches(0.9), H - d - Inches(0.9), d, AMBER)
+        icon(sl, icon_name, Inches(0.9) + int(d * 0.17), H - int(d * 1.12) - Inches(0.9), d, "deep-blue")
+    return pw
+
+
+def i_content(prs, s, n, deck, items=None, title=None, icon_name=None, max_d=None):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    items = items if items is not None else (s.get("bullets") or [])
+    title = title or s.get("title", "")
+    pw = panel(sl, s, deck, title, icon_name or topic_icon(s, title, " ".join(items)), max_d=max_d)
+    x = pw + Inches(0.7)
+    w = W - x - Inches(0.7)
+    y = Inches(0.8)
+    if s.get("lead"):
+        textbox(sl, x, y, w, Inches(0.5), s["lead"], font=BODY, size=16, color=ONYX_40)
+        y += Inches(0.5)
+    if s.get("body"):
+        textbox(sl, x, y, w, Inches(1.4), s["body"], font=BODY, size=19, color=ONYX, line=1.4, hl=BLUE_35)
+        y += Pt(19) * 1.4 * est_lines(s["body"], w, 19) + Inches(0.2)
+    bottom = H - Inches(0.8) - (Inches(1.3) if s.get("next_step") else 0)
+    size = 21 if len(items) <= 4 else 18
+    if items:
+        spark_list(sl, x, y, w, bottom - y, items, size=size)
+    if s.get("next_step"):
+        yy = bottom + Inches(0.05)
+        hairline(sl, x, yy, w)
+        label(sl, x, yy + Inches(0.2), Inches(4), s.get("next_label", "Your next step"), size=12,
+              align=PP_ALIGN.LEFT, h=Inches(0.3))
+        textbox(sl, x, yy + Inches(0.52), w, Inches(0.7), s["next_step"], font=DISPLAY, size=21, color=DEEP_BLUE,
+                line=1.2, track=-25, hl=BLUE_35)
+    return sl
+
+
+def i_recap(prs, s, n, deck):
+    return i_content(prs, s, n, deck, items=s.get("points", [])[:5], title=s.get("title", "Recap"),
+                     icon_name=s.get("icon", "list-checks"))
+
+
+def bubbles(sl, x, y):
+    """Two overlapping speech bubbles with text bars: the discussion illustration."""
+    b1 = rect(sl, x, y, Inches(2.64), Inches(1.94), WHITE, rounded=True, radius=0.3)
+    t1 = sl.shapes.add_shape(MSO_SHAPE.ISOSCELES_TRIANGLE, x + Inches(0.3), y + Inches(1.78), Inches(0.5), Inches(0.42))
+    t1.rotation = 180
+    for t in (t1,):
+        t.fill.solid(); t.fill.fore_color.rgb = WHITE; t.line.fill.background(); t.shadow.inherit = False
+    rect(sl, x + Inches(0.42), y + Inches(0.55), Inches(0.85), Inches(0.11), PERIWINKLE, rounded=True, radius=0.5)
+    rect(sl, x + Inches(0.42), y + Inches(0.83), Inches(1.55), Inches(0.11), PERIWINKLE, rounded=True, radius=0.5)
+    bx, by = x + Inches(0.62), y + Inches(1.52)
+    rect(sl, bx, by, Inches(2.5), Inches(1.74), PAPAYA, rounded=True, radius=0.3)
+    t2 = sl.shapes.add_shape(MSO_SHAPE.ISOSCELES_TRIANGLE, bx + Inches(1.8), by + Inches(1.58), Inches(0.5), Inches(0.42))
+    t2.rotation = 180
+    t2.fill.solid(); t2.fill.fore_color.rgb = PAPAYA; t2.line.fill.background(); t2.shadow.inherit = False
+    rect(sl, bx + Inches(0.42), by + Inches(0.6), Inches(1.4), Inches(0.11), AMBER, rounded=True, radius=0.5)
+    rect(sl, bx + Inches(0.42), by + Inches(0.88), Inches(0.95), Inches(0.11), AMBER, rounded=True, radius=0.5)
+
+
+def i_questions(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, WHITE)
+    lw = Inches(4.45)
+    rect(sl, 0, 0, lw, H, PERI_91)
+    bubbles(sl, Inches(0.75), Inches(1.9))
+    x = lw + Inches(0.8)
+    w = W - x - Inches(0.8)
+    textbox(sl, x, Inches(0.76), w, Inches(1.1), s.get("title", "Reflection questions"), font=DISPLAY, size=27,
+            color=DEEP_BLUE, bold=True, track=-35, line=1.0)
+    ty = Inches(0.76) + Pt(32) * 1.05 * est_lines(s.get("title", "Reflection questions"), w, 32, bold=True)
+    meta = " · ".join(v for v in (s.get("format"), s.get("time")) if v)
+    if meta:
+        textbox(sl, x, ty + Inches(0.08), w, Inches(0.4), meta, font=BODY, size=14, color=ONYX_40)
+        ty += Inches(0.4)
+    y = ty + Inches(0.45)
+    size = 22 if len(s["questions"]) <= 3 else 19
+    for i, q in enumerate(s["questions"][:4]):
+        hairline(sl, x, y, w)
+        yy = y + Inches(0.24)
+        c = oval(sl, x, yy + Inches(0.02), Inches(0.44), PERIWINKLE)
+        tf = c.text_frame
+        tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        add_runs(p, str(i + 1), DISPLAY, 15, ONYX, bold=True)
+        tw = w - Inches(0.7)
+        textbox(sl, x + Inches(0.7), yy, tw, Inches(1.2), q, font=DISPLAY, size=size, color=DEEP_BLUE, line=1.22,
+                track=-20, hl=BLUE_35)
+        y = yy + Pt(size) * 1.22 * est_lines(q, tw, size) + Inches(0.32)
+    return sl
+
+
+def i_definition(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, MIST)
+    title = s.get("title", "")
+    text = s.get("text") or s.get("body", "")
+    textbox(sl, EM, ETOP, Inches(7.6), Inches(1.0), title, font=DISPLAY, size=26, color=DEEP_BLUE, bold=True,
+            track=-35)
+    size = 36 if len(text) <= 110 else 30
+    textbox(sl, EM, Inches(1.7), Inches(7.3), H - Inches(2.6), text, font=DISPLAY, size=size, color=DEEP_BLUE,
+            line=1.15, track=-30, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    illo(sl, topic_icon(s, title, text), Inches(9.0), Inches(2.1), Inches(3.3), disc=PERI_91)
+    return sl
+
+
+def i_quote(prs, s, n, deck):
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, WHITE)
+    spot(sl, s.get("icon", "message-circle"), (W - Inches(1.3)) / 2, Inches(0.55), Inches(1.3), disc=AMBER)
+    q = s["quote"].strip()
+    if not q.startswith(("“", '"')):
+        q = f"“{q}”"
+    size = 34 if len(q) <= 120 else 28
+    follow = s.get("question") or s.get("prompt")
+    textbox(sl, Inches(1.6), Inches(1.9), W - Inches(3.2), Inches(2.9), q, font=DISPLAY, size=size,
+            color=DEEP_BLUE, line=1.14, track=-30, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, hl=BLUE_35)
+    y = Inches(5.0)
+    if s.get("author"):
+        who = s["author"] + (f", {s['role']}" if s.get("role") else "")
+        textbox(sl, Inches(2), y - Inches(0.1), W - Inches(4), Inches(0.4), who, font=BODY, size=15, color=ONYX_40,
+                align=PP_ALIGN.CENTER)
+        y += Inches(0.45)
+    if follow:
+        rect(sl, Inches(1.8), y, W - Inches(3.6), Inches(1.35), PERI_91, rounded=True, radius=0.3)
+        textbox(sl, Inches(2.3), y, W - Inches(4.6), Inches(1.35), follow, font=BODY, size=17, color=DEEP_BLUE,
+                italic=True, line=1.4, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    return sl
+
+
+EDITORIAL_OVERRIDES.update({"section": i_section, "break": i_break, "content": i_content, "recap": i_recap,
+                            "questions": i_questions, "definition": i_definition, "quote": i_quote})
+
+
+def title_icon(s):
+    return s.get("icon") if s.get("icon") in ICON_CATALOG else (
+        pick_icon(s.get("info", ""), s.get("title", ""), s.get("series", ""), s.get("subtitle", "")) or "sparkles")
+
+
+def pill(sl, x, y, text, fill, ink, size=15):
+    h = Inches(0.5)
+    w = Emu(int(Pt(size) * 0.58 * len(text) + Inches(0.6)))
+    shp = rect(sl, x, y, w, h, fill, rounded=True, radius=0.5)
+    textbox(sl, x, y, w, h, text, font=BODY, size=size, color=ink, bold=True, align=PP_ALIGN.CENTER,
+            anchor=MSO_ANCHOR.MIDDLE)
+    return w
+
+
+def title_text(sl, s, x, y, w, ink, series_ink, kicker_ink, upper=False, size=60):
+    label(sl, x, y, w, s.get("kicker", "Frontier Commons"), size=13, color=kicker_ink, align=PP_ALIGN.LEFT,
+          h=Inches(0.35))
+    y += Inches(0.55)
+    title = s["title"].upper() if upper else s["title"]
+    lines = title.count("\n") + 1 if "\n" in title else est_lines(title, w, size, bold=True)
+    textbox(sl, x, y, w, Pt(size) * 1.0 * lines + Inches(0.3), title, font=DISPLAY, size=size, color=ink, bold=True,
+            line=0.95, track=-40)
+    y += Pt(size) * 0.97 * lines + Inches(0.1)
+    if s.get("series"):
+        ss = int(size * 0.78)
+        textbox(sl, x, y, w, Pt(ss) * 1.2, s["series"].upper() if upper else s["series"], font=DISPLAY, size=ss,
+                color=series_ink, bold=True, italic=True, line=1.0, track=-30)
+        y += Pt(ss) * 1.1 + Inches(0.35)
+    elif s.get("subtitle"):
+        textbox(sl, x, y + Inches(0.1), w, Inches(1.0), s["subtitle"], font=DISPLAY, size=24, color=series_ink,
+                line=1.2)
+        y += Inches(1.0)
+    return y
+
+
+def t_title_illustrated(prs, s, n, deck):
+    """Papaya title with a large brand-shape composition around the week's topic icon."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, PAPAYA)
+    oval(sl, Inches(7.7), Inches(0.75), Inches(5.0), PERIWINKLE)
+    sl.shapes.add_picture(str(TEX / "dots-navy.png"), Inches(11.2), Inches(0.45), Inches(1.5), Inches(1.5))
+    tile = Inches(2.5)
+    rect(sl, Inches(7.2), Inches(3.55), tile, tile, DEEP_BLUE, rounded=True, radius=0.2)
+    icon(sl, title_icon(s), Inches(7.2) + Inches(0.55), Inches(3.55) + Inches(0.55), tile - Inches(1.1), "mist")
+    oval(sl, Inches(10.55), Inches(5.3), Inches(0.95), AMBER)
+    oval(sl, Inches(6.75), Inches(2.7), Inches(0.42), PERI_91)
+    y = title_text(sl, s, Inches(0.9), Inches(1.45), Inches(6.2), DEEP_BLUE, BLUE_35, BLUE_35, size=58)
+    if s.get("info"):
+        parts = [p.strip() for p in s["info"].split("·")]
+        x = Inches(0.9)
+        for p in parts[:3]:
+            x += pill(sl, x, y, p, WHITE, DEEP_BLUE, size=14) + Inches(0.12)
+    if s.get("org"):
+        textbox(sl, Inches(0.9), H - Inches(0.95), Inches(6), Inches(0.4), s["org"], font=BODY, size=13,
+                color=ONYX_40)
+    else:
+        logo(sl, "wordmark-horizontal-deep-blue", Inches(0.9), H - Inches(0.95), Inches(0.3))
+    return sl
+
+
+def t_title_bold(prs, s, n, deck):
+    """Deep Blue title with big bleeding circles, the topic icon and the series in Amber."""
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    bg(sl, DEEP_BLUE)
+    if s.get("icon"):  # no topic graphic by default; set "icon" on the title slide to add one
+        icon(sl, title_icon(s), Inches(9.3), Inches(2.2), Inches(3.0), "periwinkle")
+    sl.shapes.add_picture(str(TEX / "dots-periwinkle.png"), Inches(-0.2), H - Inches(3.6), Inches(1.7), Inches(3.6))
+    y = title_text(sl, s, Inches(0.9), Inches(1.35), Inches(6.4), WHITE, AMBER, PERI_82, upper=True, size=64)
+    if s.get("info"):
+        textbox(sl, Inches(0.9), y, Inches(6.2), Inches(0.5), s["info"], font=BODY, size=15, color=PERI_82)
+    if s.get("org"):
+        textbox(sl, Inches(0.9), H - Inches(0.95), Inches(6), Inches(0.4), s["org"], font=BODY, size=13, color=MIST)
+    else:
+        logo(sl, "wordmark-horizontal-mist", Inches(0.9), H - Inches(0.95), Inches(0.3))
+    return sl
+
+
+def e_title_any(prs, s, n, deck):
+    v = s.get("variant") or deck.get("title_variant", "bold")
+    return {"illustrated": t_title_illustrated, "bold": t_title_bold}.get(v, e_title)(prs, s, n, deck)
+
+
+EDITORIAL_OVERRIDES["title"] = e_title_any
+
+
 LAYOUTS = {
     "title": l_title, "section": l_section, "content": l_content, "two_column": l_two_column,
     "cards": l_cards, "stats": l_stats, "process": l_process, "agenda": l_agenda, "quote": l_quote,
@@ -1186,14 +1917,16 @@ LAYOUTS = {
     "icon_grid": l_icon_grid, "chart": l_chart,
     "question": l_question, "questions": l_questions, "think_pair_share": l_think_pair_share,
     "activity": l_activity, "scenario": l_scenario, "recap": l_recap, "break": l_break,
+    "pillars": l_pillars, "tool": l_tool, "definition": e_definition,
 }
 
 # ---- Planner: pick layouts from content, split overflow, lint copy -----------
 # How many items fit one slide, per layout (more are split across balanced continuation slides).
 CAPACITY = {"content": 8, "cards": 4, "stats": 4, "process": 6, "agenda": 8, "icon_grid": 6, "questions": 4,
-            "activity": 5, "recap": 4}
+            "activity": 5, "recap": 5, "pillars": 4}
 LIST_KEY = {"content": "bullets", "cards": "cards", "stats": "stats", "process": "steps", "agenda": "items",
-            "icon_grid": "items", "questions": "questions", "activity": "steps", "recap": "points"}
+            "icon_grid": "items", "questions": "questions", "activity": "steps", "recap": "points",
+            "pillars": "items"}
 CLOSED_Q = re.compile(r"^(is|are|was|were|do|does|did|can|could|will|would|should|have|has|had|am)\b", re.I)
 LONG_BULLET = 90   # a bullet longer than this counts as "long": at most 4 long bullets per slide
 LIMITS = {"title": 60, "bullet": 110, "body": 320, "card": 140, "step": 90, "stat_label": 60, "quote": 280,
@@ -1261,6 +1994,8 @@ def auto_layout(s):
     if kind == "quote" or (n == 1 and pts[0].get("author")):
         p = pts[0]
         return "quote", dict(base, quote=p.get("text") or p.get("quote"), author=p.get("author"), role=p.get("role"))
+    if kind == "definition" or (n == 1 and STYLE == "teaching" and base.get("title")):
+        return "definition", dict(base, text=pts[0].get("text") or pts[0].get("title"))
     if n == 1:
         return "statement", dict(base, text=pts[0].get("title") or pts[0]["text"])
     titled = all(p.get("title") for p in pts)
@@ -1269,6 +2004,10 @@ def auto_layout(s):
                           "bullets": p.get("bullets")}
         if n == 2:
             return "two_column", dict(base, left=side(pts[0]), right=side(pts[1]))
+    if titled and (kind == "pillars" or (STYLE == "teaching" and n <= 4 and kind != "features"
+                                         and not any(p.get("subtitle") for p in pts))):
+        return "pillars", dict(base, items=[{"label": p["title"], "text": p.get("text", ""), "ref": p.get("ref"),
+                                             "quote": p.get("quote"), "icon": p.get("icon", "auto")} for p in pts])
     if titled and (kind == "principles" or any(p.get("subtitle") for p in pts)) and n <= 8:
         return "cards", dict(base, cards=[{"title": p["title"], "subtitle": p.get("subtitle"), "text": p.get("text"),
                                            "icon": p.get("icon", "auto")} for p in pts])
@@ -1337,6 +2076,8 @@ def plan(deck):
 
 def lint(slides):
     warn = []
+    if STYLE == "teaching":  # full-sentence points and two-line titles are normal in this style
+        LIMITS.update({"title": 90, "bullet": 150, "card": 170})
     for n, s in enumerate(slides, 1):
         where = f"slide {n} ({s['layout']})"
         def chk(text, lim, what):
@@ -1371,6 +2112,7 @@ def lint(slides):
 
 DECK_DIR = Path(".")
 STYLE = "teaching"
+FONT_SCALE = 1.0
 TMP_DIR = None
 
 
@@ -1397,11 +2139,13 @@ def main():
 
     global STYLE
     STYLE = deck.get("style", "teaching")
-    if STYLE not in ("teaching", "formal"):
-        sys.exit('"style" must be "teaching" (default) or "formal"')
+    if STYLE not in ("teaching", "workshop", "formal"):
+        sys.exit('"style" must be "teaching" (default), "workshop" or "formal"')
+    global FONT_SCALE
+    FONT_SCALE = float(deck.get("font_scale", 0.9 if STYLE == "teaching" else 1.0))
     slides = plan(deck)
     for n, s in enumerate(slides, 1):
-        fn = TEACHING_OVERRIDES.get(s["layout"]) if STYLE == "teaching" else None
+        fn = (EDITORIAL_OVERRIDES if STYLE == "teaching" else TEACHING_OVERRIDES if STYLE == "workshop" else {}).get(s["layout"])
         try:
             sl = (fn or LAYOUTS[s["layout"]])(prs, s, n, deck)
         except KeyError as e:

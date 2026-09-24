@@ -2,7 +2,7 @@
 
 You write a JSON outline and `scripts/build_deck.py` builds an editable, on-brand PowerPoint. You decide **what each slide says**. The builder decides **how it looks**: the layout, icons, splitting and spacing.
 
-**Style:** `"style": "teaching"` is the default. It's warm and conversational, with rounded point rows, a run-sheet agenda and facilitation slides; see `teaching.md`. Set `"style": "formal"` at the top of the deck for partner or board briefings, pitches and reports.
+**Style:** `"style": "teaching"` is the default. It's the calm editorial look of Frontier Commons' Plug In sessions: white pages with a dot band, spark bullets, pillars and hairline lists (see `teaching.md`). `"workshop"` is warm and playful, and `"formal"` is the brand-guide briefing look. In the teaching style, 2–4 titled points become labelled `pillars` and a single point under a title becomes a `definition`.
 
 ## Workflow
 
@@ -99,9 +99,9 @@ Don't add a visual just to fill space. A `statement` slide stays text-only.
 | `image` | `title`*, `image` or `graphic`*, `tag`, `body`, `bullets`, `caption`, `side` |
 | `statement` | `text`*, `tag` |
 | `closing` | `title`, `subtitle`, `contact` |
-| `question`, `questions`, `think_pair_share`, `scenario`, `activity`, `recap`, `break` | see `teaching.md` |
+| `pillars`, `definition`, `tool`, `question`, `questions`, `think_pair_share`, `scenario`, `activity`, `recap`, `break` | see `teaching.md` |
 
-`title` in the teaching style also takes `session` (a chip such as "Workshop · 90 min"), `presenter` and `icon`.
+`title` in the teaching style takes `kicker`, `title` (program name), `series` (Amber italic line), `info`, `org`, `icon`, and `variant` (`bold` default, `illustrated`, or `classic`, which also takes `image`). In the workshop style it takes `session`, `presenter` and `icon`. Any slide in the teaching style takes `lead` (a line under the title).
 
 Every slide accepts `"notes"`. Every list slide accepts `"icons": false`. The deck-level `"footer"` sets the footer text.
 
@@ -117,4 +117,4 @@ To add a layout, write an `l_<name>` function in `scripts/build_deck.py` using t
 - `scripts/preview_deck.py`: Quick Look previews and contact sheets
 - `scripts/build_icons.py`: re-rasterizes icons after you add one
 - `scripts/install_fonts.sh`: installs Inter and DM Sans (static TTFs, SIL OFL) on macOS
-- `examples/decks/teaching-deck.json` (a teaching session), `auto-deck.json` (auto layouts, charts, timeline, embedded graphic), `sample-deck.json` (formal style, explicit layouts)
+- `examples/decks/teaching-template.json` (blank teaching-style template), `workshop-deck.json` (workshop style), `auto-deck.json` (auto layouts, charts, timeline, embedded graphic), `sample-deck.json` (formal style, explicit layouts)

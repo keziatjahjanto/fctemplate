@@ -2,7 +2,7 @@
 
 One Claude skill, [`frontier-commons`](.claude/skills/frontier-commons/SKILL.md), that produces on-brand Frontier Commons material from the *Branding Guide (January 2026)*:
 
-- **Presentations (.pptx).** The default style is warm and built for teaching and discussion: discussion questions, think-pair-share, scenarios, activities, recaps and breaks. A formal style is available for briefings. Claude outlines the content, and the builder picks each slide's layout from how many points it has and what kind, splits crowded slides, adds brand icons, editable charts and timelines, and flags text that's too long or yes/no discussion questions.
+- **Presentations (.pptx).** The default teaching style matches the Fall Fellows "Plug In" sessions (white pages, spark bullets, pillars, reflection questions, definitions, tools). There are also a warm workshop style and a formal briefing style, plus facilitation slides (think-pair-share, scenarios, activities, recaps, breaks). Claude outlines the content, and the builder picks each slide's layout from how many points it has and what kind, splits crowded slides, adds brand icons, editable charts and timelines, and flags text that's too long or yes/no discussion questions.
 - **Graphics (.png):** social posts, carousels, stories, discussion prompts, quote and stat cards, event promos, banners and logo exports, using the same icons as the slides.
 
 Try asking Claude:
@@ -29,7 +29,7 @@ python3 $S/scripts/build_deck.py my-deck.json -o my-deck.pptx --plan   # --plan 
 python3 $S/scripts/preview_deck.py my-deck.pptx -o preview/            # PNG previews via Quick Look
 python3 $S/scripts/render.py my-post.json -o out/
 ```
-Examples: `examples/decks/teaching-deck.json`, `auto-deck.json`, `sample-deck.json`, and `examples/graphics/`.
+Examples: `examples/decks/teaching-template.json` (blank teaching template: copy it and fill in the brackets), `workshop-deck.json`, `auto-deck.json`, `sample-deck.json`, and `examples/graphics/`.
 
 ## Notes
 - The logo files are **reconstructed** from the guide. Put the official files in `assets/logos/` with the same names to replace them.

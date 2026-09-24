@@ -7,7 +7,10 @@
     "members",
     "volunteers",
     "friends",
-    "together"
+    "together",
+    "shared",
+    "communal",
+    "corporate"
   ],
   "user": [
     "person",
@@ -58,7 +61,12 @@
     "scripture",
     "teaching",
     "curriculum",
-    "course"
+    "course",
+    "psalms",
+    "psalm",
+    "lamentations",
+    "verse",
+    "book"
   ],
   "library": [
     "research",
@@ -167,7 +175,12 @@
     "prayer",
     "pray",
     "praying",
-    "intercession"
+    "intercession",
+    "healthy",
+    "emotions",
+    "grief",
+    "sorrow",
+    "feel"
   ],
   "hand-heart": [
     "give",
@@ -175,7 +188,8 @@
     "donate",
     "donation",
     "generosity",
-    "donors"
+    "donors",
+    "looks like"
   ],
   "hand-helping": [
     "help",
@@ -200,7 +214,11 @@
     "salvation",
     "evangelism",
     "spiritual",
-    "discipleship"
+    "discipleship",
+    "god",
+    "lord",
+    "kingdom",
+    "christ-followers"
   ],
   "message-circle": [
     "conversation",
@@ -259,7 +277,9 @@
     "fresh",
     "highlight",
     "special",
-    "vision"
+    "vision",
+    "edge",
+    "unique"
   ],
   "target": [
     "goal",
@@ -269,7 +289,9 @@
     "aim",
     "outcome",
     "purpose",
-    "mission"
+    "mission",
+    "end goal",
+    "impact"
   ],
   "flag": [
     "milestone",
@@ -464,7 +486,8 @@
     "trust",
     "protection",
     "secure",
-    "integrity"
+    "integrity",
+    "an act of trust"
   ],
   "badge-check": [
     "verified",
@@ -521,7 +544,9 @@
     "dinner",
     "lunch",
     "potluck",
-    "eat"
+    "eat",
+    "table",
+    "bring to the table"
   ],
   "music": [
     "music",
@@ -595,7 +620,12 @@
     "list",
     "to-do",
     "next steps",
-    "action items"
+    "action items",
+    "prioritise",
+    "prioritize",
+    "priorities",
+    "recap",
+    "deliverables"
   ],
   "notebook-pen": [
     "write",
@@ -661,7 +691,11 @@
     "see",
     "perspective",
     "awareness",
-    "insight"
+    "insight",
+    "notice",
+    "knowing yourself",
+    "yourself",
+    "lens"
   ],
   "brain": [
     "think",
@@ -729,7 +763,9 @@
     "story",
     "stories",
     "testimony",
-    "devotional"
+    "devotional",
+    "job",
+    "lament"
   ],
   "hand-platter": [
     "serve",
@@ -747,7 +783,9 @@
     "decision",
     "choice",
     "options",
-    "direction"
+    "direction",
+    "decide",
+    "pivot"
   ],
   "waypoints": [
     "steps",
@@ -798,5 +836,10 @@
     "go",
     "mobilize",
     "mobilizing"
+  ],
+  "spark": [
+    "spark",
+    "bullet",
+    "point"
   ]
 }

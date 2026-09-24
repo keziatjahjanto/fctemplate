@@ -52,7 +52,7 @@ def main():
             copy = Path(tmp) / f"slide-{k + 1:02d}.pptx"
             single_slide_copy(str(src), k, str(copy))
             try:
-                subprocess.run(["qlmanage", "-t", "-s", "1400", "-o", tmp, str(copy)], capture_output=True, timeout=30)
+                subprocess.run(["qlmanage", "-t", "-s", "2400", "-o", tmp, str(copy)], capture_output=True, timeout=30)
             except subprocess.TimeoutExpired:
                 subprocess.run(["pkill", "qlmanage"], capture_output=True)
             thumb = Path(tmp) / f"{copy.name}.png"

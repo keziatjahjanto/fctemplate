@@ -1,0 +1,51 @@
+{
+  "title": "[Program] · [Series] · [Week] · [Topic]",
+  "style": "teaching",
+  "kicker": "[Week N] · [Topic]",
+  "slides": [
+    {"layout": "title", "kicker": "Frontier Commons", "title": "[Program\nname]", "series": "[Series name]",
+     "info": "[Week N]  ·  [Topic]  ·  [Date]", "org": "[Organization]",
+     "notes": "[Welcome and opening words]"},
+    {"layout": "recap", "title": "Recap", "points": ["[Key idea from last week]", "[Key idea from last week]", "[Key idea from last week]"],
+     "notes": "[Invite people to share what they remember before showing the points]"},
+    {"layout": "break", "title": "Let's take a\npause", "notes": "[Quiet, prayer or settling in]"},
+    {"layout": "auto", "title": "What [topic] is", "points": ["[One-sentence definition of the topic.]"]},
+    {"layout": "auto", "title": "Where [topic] shows up", "note": "[Scripture references and translation to be added]", "points": [
+      {"title": "[Label 1]", "text": "[One or two sentences.]", "icon": "book-open"},
+      {"title": "[Label 2]", "text": "[One or two sentences.]", "icon": "book-open"},
+      {"title": "[Label 3]", "text": "[One or two sentences.]", "icon": "cross"}]},
+    {"layout": "auto", "title": "What [topic] looks like", "icon": "hand-heart", "points": [
+      "[A complete sentence describing it.]",
+      "[A complete sentence describing it.]",
+      "[A complete sentence describing it.]",
+      "[A complete sentence describing it.]"]},
+    {"layout": "questions", "title": "Reflection questions", "questions": [
+      "[Open question starting with What / How / Why?]",
+      "[Open question starting with What / How / Why?]",
+      "[Open question starting with What / How / Why?]"],
+     "notes": "Ask: [question]. Give 1 minute of quiet. Listen for: [ideas]. Transition: \"[next idea]\""},
+    {"layout": "auto", "title": "Why [topic] matters", "points": [
+      {"title": "[Reason 1]", "text": "[One or two sentences.]", "icon": "heart"},
+      {"title": "[Reason 2]", "text": "[One or two sentences.]", "ref": "[Scripture reference]", "icon": "shield-check"},
+      {"title": "[Reason 3]", "text": "[One or two sentences.]", "icon": "book-heart"},
+      {"title": "[Reason 4]", "text": "[One or two sentences.]", "icon": "users"}]},
+    {"layout": "section", "title": "[Part two\ntitle]", "icon": "eye"},
+    {"layout": "auto", "title": "[Application point title]", "icon": "lightbulb", "points": [
+      "[Supporting point.]", "[Supporting point.]", "[Supporting point.]"]},
+    {"layout": "quote", "quote": "[A key quote to sit with.]", "question": "[A follow-up reflection question for the room?]"},
+    {"layout": "section", "title": "[Part three\ntitle]", "icon": "sparkles"},
+    {"layout": "auto", "title": "[Building point title]", "icon": "rocket", "points": [
+      "[Supporting point.]", "[Supporting point.]", "[Supporting point.]"]},
+    {"layout": "auto", "title": "[Three-part idea title]", "points": [
+      {"title": "[Word 1]", "text": "[One or two sentences.]", "icon": "list-checks"},
+      {"title": "[Word 2]", "text": "[One or two sentences.]", "icon": "signpost"},
+      {"title": "[Word 3]", "text": "[One or two sentences.]", "icon": "target"}]},
+    {"layout": "content", "title": "Kingdom impact", "lead": "As Christ-followers, we should ask ourselves:", "icon": "cross", "bullets": [
+      "[Self-check question?]", "[Self-check question?]", "[Self-check question?]"]},
+    {"layout": "tool", "title": "[Tool name]", "image_caption": "[Add an example image]", "rows": [
+      {"label": "Purpose", "text": "[What this tool helps you do.]"},
+      {"label": "Goal", "text": "[What you should come away with.]"},
+      {"label": "Keep in mind", "text": "[A caution or tip.]"}]},
+    {"layout": "content", "title": "Deliverables", "icon": "clipboard-list", "bullets": ["[Deliverable]", "[Deliverable]"]}
+  ]
+}
