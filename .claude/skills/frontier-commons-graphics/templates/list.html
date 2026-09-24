@@ -1,0 +1,27 @@
+<!-- default-theme: mist -->
+<!-- fields: tag, title*, items* (list of {title, text}), footnote -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; gap: calc(var(--u) * 4); }
+  .items { display: flex; flex-direction: column; gap: calc(var(--u) * 2.4); flex: 1; justify-content: center; }
+  .aspect-wide .items { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 4) calc(var(--u) * 6); align-content: center; }
+  .item { display: flex; gap: calc(var(--u) * 2.6); align-items: flex-start; }
+  .n { flex: 0 0 auto; width: calc(var(--u) * 7); height: calc(var(--u) * 7); border-radius: 50%; background: var(--periwinkle); color: var(--onyx);
+       display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: calc(var(--u) * 3.2); }
+  .theme-periwinkle .n { background: var(--deep-blue); color: var(--mist); }
+  .item .section { margin-top: calc(var(--u) * 1.4); }
+  .item .body-text { color: var(--muted); margin-top: calc(var(--u) * 0.6); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}}">
+  <div class="wrap">
+    <div style="display:flex; flex-direction:column; gap: calc(var(--u) * 2.4)">
+      {{#tag}}<div><span class="tag">{{tag}}</span></div>{{/tag}}
+      <div class="subtitle">{{title}}</div>
+    </div>
+    <div class="items">
+      {{#items}}<div class="item"><div class="n">{{index}}</div><div><div class="section">{{title}}</div>{{#text}}<div class="body-text">{{text}}</div>{{/text}}</div></div>{{/items}}
+    </div>
+    {{#footnote}}<div class="caption">{{footnote}}</div>{{/footnote}}
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

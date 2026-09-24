@@ -1,0 +1,22 @@
+<!-- default-theme: mist -->
+<!-- fields: tag, stat*, label*, detail, source -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 3); }
+  .num { font-family: var(--display); font-weight: 700; letter-spacing: -0.04em; line-height: 0.95; color: var(--heading); font-size: calc(var(--u) * 26); }
+  .aspect-wide .num { font-size: calc(var(--u) * 30); }
+  .label { color: var(--heading); max-width: 22ch; }
+  .theme-deep-blue .label, .theme-onyx .label { color: var(--fg); }
+  .detail { max-width: 42ch; color: var(--muted); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}}">
+  <div class="wrap">
+    {{#tag}}<div><span class="tag">{{tag}}</span></div>{{/tag}}
+    <div class="num">{{stat}}</div>
+    <div class="rule amber"></div>
+    <div class="heading label">{{label}}</div>
+    {{#detail}}<div class="body-text detail">{{detail}}</div>{{/detail}}
+    {{#source}}<div class="caption">Source: {{source}}</div>{{/source}}
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

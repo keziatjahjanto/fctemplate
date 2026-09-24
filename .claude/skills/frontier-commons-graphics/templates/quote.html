@@ -1,0 +1,25 @@
+<!-- default-theme: papaya -->
+<!-- fields: quote*, author, role, image (headshot) -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 4); }
+  .mark { font-family: var(--display); font-weight: 700; color: var(--amber); font-size: calc(var(--u) * 20); line-height: 0.6; height: calc(var(--u) * 9); }
+  .theme-periwinkle .mark { color: var(--deep-blue); }
+  .q { font-family: var(--body); font-style: italic; font-weight: 500; color: var(--heading); font-size: calc(var(--u) * 5.4); line-height: 1.3; letter-spacing: -0.02em; max-width: 26ch; }
+  .aspect-wide .q { font-size: calc(var(--u) * 6); max-width: 34ch; }
+  .who { display: flex; align-items: center; gap: calc(var(--u) * 2.6); }
+  .who img { width: calc(var(--u) * 11); height: calc(var(--u) * 11); border-radius: 50%; object-fit: cover; }
+  .role { margin-top: calc(var(--u) * 0.4); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}}">
+  <div class="wrap">
+    <div class="mark">&ldquo;</div>
+    <div class="q">{{quote}}</div>
+    <div class="rule amber"></div>
+    {{#author}}<div class="who">
+      {{#image}}<img src="{{{image}}}">{{/image}}
+      <div><div class="section">{{author}}</div>{{#role}}<div class="caption role">{{role}}</div>{{/role}}</div>
+    </div>{{/author}}
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

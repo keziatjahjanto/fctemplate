@@ -1,0 +1,30 @@
+<!-- default-theme: deep-blue -->
+<!-- fields: tag, headline*, subtext, cta, image, footnote -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; gap: calc(var(--u) * 6); }
+  .text { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 3.2); }
+  .media { flex: 0 0 42%; }
+  .aspect-tall .wrap, .aspect-square .wrap { flex-direction: column; }
+  .aspect-square .media { flex: 0 0 40%; order: 2; } .aspect-tall .media { flex: 0 0 42%; order: 2; }
+  .aspect-square .text, .aspect-tall .text { padding-bottom: 0; }
+  .aspect-square.has-media .header { font-size: calc(var(--u) * 7.6); }
+  .aspect-ultrawide .header { font-size: calc(var(--u) * 16); } .aspect-ultrawide .subheading { font-size: calc(var(--u) * 7); }
+  .aspect-ultrawide .tag { font-size: calc(var(--u) * 5); } .aspect-ultrawide { --pad: calc(var(--u) * 12); }
+  .aspect-ultrawide .text { padding-bottom: 0; gap: calc(var(--u) * 5); } .aspect-ultrawide .media { flex-basis: 30%; }
+  .subheading { color: var(--muted); max-width: 30ch; }
+  .footnote { margin-top: auto; }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}} {{#image}}has-media{{/image}}">
+  <div class="wrap">
+    <div class="text">
+      {{#tag}}<div><span class="tag">{{tag}}</span></div>{{/tag}}
+      <div class="header">{{headline}}</div>
+      {{#subtext}}<div class="subheading">{{subtext}}</div>{{/subtext}}
+      {{#cta}}<div><span class="btn">{{cta}}</span></div>{{/cta}}
+      {{#footnote}}<div class="caption">{{footnote}}</div>{{/footnote}}
+    </div>
+    {{#image}}<div class="media"><img class="photo" src="{{{image}}}"></div>{{/image}}
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

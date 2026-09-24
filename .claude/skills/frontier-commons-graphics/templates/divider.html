@@ -1,0 +1,17 @@
+<!-- default-theme: periwinkle -->
+<!-- fields: word*, kicker. Signature style: a big word sitting on a thin line (as in the Branding Guide section pages) -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .line { position: absolute; left: 0; right: 0; top: 78.6%; height: max(2px, calc(var(--u) * 0.2)); background: var(--rule); }
+  .word { position: absolute; right: var(--pad); bottom: 21.4%; font-family: var(--display); font-weight: 600; color: var(--heading);
+          font-size: calc(var(--u) * 22); line-height: 1; letter-spacing: -0.02em; transform: translateY(0.137em); white-space: nowrap; text-align: right; }
+  .aspect-tall .word { font-size: calc(var(--u) * 18); white-space: normal; }
+  .kicker { position: absolute; left: var(--pad); top: var(--pad); font-family: var(--body); font-weight: 500; font-size: calc(var(--u) * 3); color: var(--heading); letter-spacing: 0.02em; }
+  .logo-slot { bottom: calc(var(--pad) * 0.6); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}}">
+  {{#kicker}}<div class="kicker">{{kicker}}</div>{{/kicker}}
+  <div class="line"></div>
+  <div class="word">{{word}}</div>
+  <div class="logo-slot left">{{{logo}}}</div>
+</body></html>

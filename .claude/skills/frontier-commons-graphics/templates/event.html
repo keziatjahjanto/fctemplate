@@ -1,0 +1,35 @@
+<!-- default-theme: deep-blue -->
+<!-- fields: tag, title*, subtitle, date, time, location, cta, image -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="{{{base_css}}}">
+<style>
+  .wrap { position: absolute; inset: var(--pad); bottom: calc(var(--pad) + var(--footer)); display: flex; gap: calc(var(--u) * 6); }
+  .text { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 3); }
+  .media { flex: 0 0 40%; }
+  .aspect-square .wrap, .aspect-tall .wrap { flex-direction: column; }
+  .aspect-square .media { flex: 0 0 34%; } .aspect-tall .media { flex: 0 0 38%; }
+  .aspect-square.has-media .subtitle { font-size: calc(var(--u) * 5.2); }
+  .aspect-square.has-media .text { gap: calc(var(--u) * 2.2); }
+  .sub { color: var(--muted); }
+  .details { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * 1.2) calc(var(--u) * 3); margin-top: calc(var(--u) * 1); align-items: baseline; }
+  .details dt { font-family: var(--body); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: calc(var(--u) * 2); color: var(--amber); }
+  .theme-mist .details dt, .theme-papaya .details dt { color: var(--blue-50); }
+  .theme-periwinkle .details dt { color: var(--deep-blue); }
+  .details dd { font-size: calc(var(--u) * 3.2); }
+</style></head>
+<body class="theme-{{theme}} aspect-{{aspect}} {{^logo}}no-logo{{/logo}} {{#image}}has-media{{/image}}">
+  <div class="wrap">
+    {{#image}}<div class="media"><img class="photo" src="{{{image}}}"></div>{{/image}}
+    <div class="text">
+      {{#tag}}<div><span class="tag">{{tag}}</span></div>{{/tag}}
+      <div class="subtitle">{{title}}</div>
+      {{#subtitle}}<div class="subheading sub">{{subtitle}}</div>{{/subtitle}}
+      <dl class="details">
+        {{#date}}<dt>Date</dt><dd>{{date}}</dd>{{/date}}
+        {{#time}}<dt>Time</dt><dd>{{time}}</dd>{{/time}}
+        {{#location}}<dt>Where</dt><dd>{{location}}</dd>{{/location}}
+      </dl>
+      {{#cta}}<div style="margin-top: calc(var(--u) * 1.5)"><span class="btn">{{cta}}</span></div>{{/cta}}
+    </div>
+  </div>
+  <div class="logo-slot">{{{logo}}}</div>
+</body></html>

@@ -1,0 +1,6 @@
+[
+ {"template":"logo","size":"1600x220","transparent":true,"theme":"mist","name":"wordmark-horizontal-deep-blue","fields":{"layout":"horizontal"}},
+ {"template":"logo","size":"1600x220","transparent":true,"theme":"deep-blue","name":"wordmark-horizontal-mist","fields":{"layout":"horizontal"}},
+ {"template":"logo","size":"800x800","transparent":true,"theme":"mist","name":"wordmark-stacked-deep-blue","fields":{"layout":"stacked"}},
+ {"template":"logo","size":"800x800","transparent":true,"theme":"deep-blue","name":"wordmark-stacked-mist","fields":{"layout":"stacked"}}
+]
